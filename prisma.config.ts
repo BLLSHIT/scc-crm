@@ -15,6 +15,7 @@ export default defineConfig({
   },
   datasource: {
     url: process.env["DATABASE_URL"],
+    // @ts-expect-error directUrl is valid for Supabase pgbouncer but missing from Prisma 7 type
     directUrl: process.env["DIRECT_URL"],
   },
 });
