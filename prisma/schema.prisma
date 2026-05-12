@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  admin
+  sales
+  project_manager
+  viewer
+}
+
+model Profile {
+  id        String   @id
+  email     String   @unique
+  firstName String
+  lastName  String
+  role      UserRole @default(sales)
+  avatarUrl String?
+  isActive  Boolean  @default(true)
+
+  ownedContacts Contact[] @relation("ContactOwner")
+  ownedDeals    Deal[]    @relation("DealOwner")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model Company {
+  id       String  @id @default(cuid())
+  name     String
+  website  String?
+  industry String?
+  size     String?
+  country  String?
+  city     String?
+  phone    String?
+  email    String?
+  tags     String[] @default([])
+
+  contacts Contact[]
+  deals    Deal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("companies")
+}
+
+model Contact {
+  id        String  @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  position  String?
+  source    String?
+  tags      String[] @default([])
+  notes     String?
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+  ownerId   String?
+  owner     Profile? @relation("ContactOwner", fields: [ownerId], references: [id])
+
+  deals DealContact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@map("contacts")
+}
+
+model Pipeline {
+  id        String          @id @default(cuid())
+  name      String
+  isDefault Boolean         @default(false)
+  stages    PipelineStage[]
+  deals     Deal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pipelines")
+}
+
+model PipelineStage {
+  id          String  @id @default(cuid())
+  name        String
+  order       Int
+  probability Float   @default(0)
+  color       String  @default("#6366f1")
+  isWon       Boolean @default(false)
+  isLost      Boolean @default(false)
+
+  pipelineId String
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals      Deal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([pipelineId, order])
+  @@map("pipeline_stages")
+}
+
+model Deal {
+  id              String    @id @default(cuid())
+  title           String
+  value           Decimal   @default(0) @db.Decimal(12, 2)
+  currency        String    @default("EUR")
+  probability     Float     @default(0)
+  expectedCloseAt DateTime?
+  description     String?
+  lostReason      String?
+
+  pipelineId String
+  pipeline   Pipeline      @relation(fields: [pipelineId], references: [id])
+  stageId    String
+  stage      PipelineStage @relation(fields: [stageId], references: [id])
+  companyId  String?
+  company    Company?      @relation(fields: [companyId], references: [id])
+  ownerId    String?
+  owner      Profile?      @relation("DealOwner", fields: [ownerId], references: [id])
+
+  contacts DealContact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([stageId])
+  @@map("deals")
+}
+
+model DealContact {
+  dealId    String
+  contactId String
+  role      String?
+
+  deal    Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@id([dealId, contactId])
+  @@map("deal_contacts")
+}
