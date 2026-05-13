@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,11 +9,12 @@ export default async function DashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user!.id)
+    .eq('id', user.id)
     .single()
 
   const [
@@ -34,7 +36,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex-1 overflow-auto">
-      <Header title="Dashboard" profile={profile as Profile} />
+      <Header title="Dashboard" profile={(profile as Profile) ?? null} />
       <main className="p-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {kpis.map((kpi) => (

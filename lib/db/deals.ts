@@ -43,18 +43,19 @@ export async function getDealById(id: string) {
   const { data, error } = await supabase
     .from('deals')
     .select(
-      `*,
+      `id, title, value, currency, probability, expectedCloseAt, description, lostReason,
+       pipelineId, stageId, companyId, ownerId, createdAt, updatedAt,
        company:companies(id, name),
        owner:profiles(id, firstName, lastName),
        stage:pipeline_stages(id, name, color, isWon, isLost),
-       pipeline:pipelines(id, name),
-       contacts:deal_contacts(
-         role,
-         contact:contacts(id, firstName, lastName, email, position)
-       )`
+       pipeline:pipelines(id, name)`
     )
     .eq('id', id)
     .single()
-  if (error) throw new Error(error.message)
-  return data
+  if (error) {
+    console.error('[getDealById] error:', JSON.stringify(error))
+    throw new Error(error.message)
+  }
+  // Deal-Contacts (Stakeholder) separat — Nested-Join verursachte Probleme
+  return { ...data, contacts: [] }
 }

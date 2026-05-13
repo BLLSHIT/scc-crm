@@ -37,16 +37,16 @@ export async function getCompanyById(id: string) {
   const { data, error } = await supabase
     .from('companies')
     .select(
-      `*,
+      `id, name, website, industry, size, country, city, phone, email, tags, createdAt, updatedAt,
        contacts(id, firstName, lastName, email, position),
-       deals(
-         id, title, value, currency,
-         stage:pipeline_stages(id, name, color)
-       )`
+       deals(id, title, value, currency, stageId)`
     )
     .eq('id', id)
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[getCompanyById] error:', JSON.stringify(error))
+    throw new Error(error.message)
+  }
   return data
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanies } from '@/lib/db/companies'
 import { Header } from '@/components/layout/Header'
@@ -15,8 +16,9 @@ export default async function CompaniesPage({
   const params = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
   const { data: profile } = await supabase
-    .from('profiles').select('*').eq('id', user!.id).single()
+    .from('profiles').select('*').eq('id', user.id).single()
 
   const { companies, total } = await getCompanies({
     q: params.q,
@@ -27,7 +29,7 @@ export default async function CompaniesPage({
     <div className="flex-1 overflow-auto">
       <Header
         title={`Firmen (${total})`}
-        profile={profile as Profile}
+        profile={(profile as Profile) ?? null}
         actions={
           <Link href="/companies/new" className={buttonVariants({ size: 'sm' })}>
             <Plus className="w-4 h-4 mr-2" />

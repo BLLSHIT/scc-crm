@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getDefaultPipeline, getDealsForPipeline } from '@/lib/db/deals'
 import { Header } from '@/components/layout/Header'
@@ -9,8 +10,9 @@ import type { Profile } from '@/types/app.types'
 export default async function DealsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
   const { data: profile } = await supabase
-    .from('profiles').select('*').eq('id', user!.id).single()
+    .from('profiles').select('*').eq('id', user.id).single()
 
   const pipeline = await getDefaultPipeline().catch(() => null)
   const { stages, deals } = pipeline
@@ -21,7 +23,7 @@ export default async function DealsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header
         title="Deals"
-        profile={profile as Profile}
+        profile={(profile as Profile) ?? null}
         actions={
           <Link
             href="/deals/new"
