@@ -96,9 +96,11 @@ model Company {
   size     String?
   country  String?
   city     String?
-  phone    String?
-  email    String?
-  tags     String[] @default([])
+  phone     String?
+  email     String?
+  linkedin  String?
+  instagram String?
+  tags      String[] @default([])
 
   contacts Contact[]
   deals    Deal[]
@@ -116,6 +118,9 @@ model Contact {
   lastName  String
   email     String?
   phone     String?
+  mobile    String?
+  linkedin  String?
+  instagram String?
   position  String?
   source    String?
   tags      String[] @default([])

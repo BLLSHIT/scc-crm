@@ -72,7 +72,7 @@ export async function getContactById(id: string) {
   const { data, error } = await supabase
     .from('contacts')
     .select(
-      `id, firstName, lastName, email, phone, position, source, notes, tags, createdAt, updatedAt,
+      `id, firstName, lastName, email, phone, mobile, linkedin, instagram, position, source, notes, tags, createdAt, updatedAt, companyId, ownerId,
        company:companies(id, name),
        owner:profiles(id, firstName, lastName)`
     )

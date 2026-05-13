@@ -8,7 +8,7 @@ import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, Phone, Building2, Pencil, Trash2 } from 'lucide-react'
+import { Mail, Phone, Smartphone, Linkedin, Instagram, Building2, Pencil, Trash2 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import type { Profile } from '@/types/app.types'
 
@@ -146,6 +146,47 @@ export default async function ContactDetailPage({
                     <a href={`tel:${contact.phone}`} className="flex items-center gap-2">
                       <Phone className="w-4 h-4" />
                       {contact.phone}
+                    </a>
+                  </div>
+                )}
+                {contact.mobile && (
+                  <div>
+                    <p className="text-slate-500 mb-1">Mobil</p>
+                    <a href={`tel:${contact.mobile}`} className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4" />
+                      {contact.mobile}
+                    </a>
+                  </div>
+                )}
+                {contact.linkedin && (
+                  <div>
+                    <p className="text-slate-500 mb-1">LinkedIn</p>
+                    <a
+                      href={contact.linkedin.startsWith('http') ? contact.linkedin : `https://${contact.linkedin}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-blue-600 hover:underline break-all"
+                    >
+                      <Linkedin className="w-4 h-4" />
+                      {contact.linkedin}
+                    </a>
+                  </div>
+                )}
+                {contact.instagram && (
+                  <div>
+                    <p className="text-slate-500 mb-1">Instagram</p>
+                    <a
+                      href={
+                        contact.instagram.startsWith('http')
+                          ? contact.instagram
+                          : `https://instagram.com/${contact.instagram.replace(/^@/, '')}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-pink-600 hover:underline"
+                    >
+                      <Instagram className="w-4 h-4" />
+                      {contact.instagram}
                     </a>
                   </div>
                 )}

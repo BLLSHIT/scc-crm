@@ -7,7 +7,7 @@ import { deleteCompany } from '@/lib/actions/companies.actions'
 import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, Phone, Globe, Pencil, Trash2, User } from 'lucide-react'
+import { Mail, Phone, Globe, Linkedin, Instagram, Pencil, Trash2, User } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
@@ -145,6 +145,42 @@ export default async function CompanyDetailPage({
                     >
                       <Mail className="w-4 h-4" />
                       {company.email}
+                    </a>
+                  </div>
+                )}
+                {company.linkedin && (
+                  <div>
+                    <p className="text-slate-500 mb-1">LinkedIn</p>
+                    <a
+                      href={
+                        company.linkedin.startsWith('http')
+                          ? company.linkedin
+                          : `https://${company.linkedin}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-blue-600 hover:underline break-all"
+                    >
+                      <Linkedin className="w-4 h-4" />
+                      {company.linkedin}
+                    </a>
+                  </div>
+                )}
+                {company.instagram && (
+                  <div>
+                    <p className="text-slate-500 mb-1">Instagram</p>
+                    <a
+                      href={
+                        company.instagram.startsWith('http')
+                          ? company.instagram
+                          : `https://instagram.com/${company.instagram.replace(/^@/, '')}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-pink-600 hover:underline"
+                    >
+                      <Instagram className="w-4 h-4" />
+                      {company.instagram}
                     </a>
                   </div>
                 )}

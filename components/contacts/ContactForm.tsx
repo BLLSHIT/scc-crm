@@ -95,9 +95,34 @@ export function ContactForm({ defaultValues, onSubmit, title, companies = [] }: 
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="phone">Telefon</Label>
-            <Input id="phone" type="tel" {...register('phone')} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="phone">Telefon</Label>
+              <Input id="phone" type="tel" {...register('phone')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="mobile">Mobil</Label>
+              <Input id="mobile" type="tel" placeholder="+49 …" {...register('mobile')} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="linkedin">LinkedIn</Label>
+              <Input
+                id="linkedin"
+                placeholder="linkedin.com/in/username"
+                {...register('linkedin')}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="instagram">Instagram</Label>
+              <Input
+                id="instagram"
+                placeholder="@username"
+                {...register('instagram')}
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">

@@ -113,6 +113,25 @@ export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
+              <Label htmlFor="linkedin">LinkedIn</Label>
+              <Input
+                id="linkedin"
+                placeholder="linkedin.com/company/firma"
+                {...register('linkedin')}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="instagram">Instagram</Label>
+              <Input
+                id="instagram"
+                placeholder="@firma"
+                {...register('instagram')}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
               <Label htmlFor="city">Stadt</Label>
               <Input id="city" {...register('city')} />
             </div>

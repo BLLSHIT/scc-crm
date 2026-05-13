@@ -50,7 +50,7 @@ export async function getCompanyById(id: string) {
   const { data, error } = await supabase
     .from('companies')
     .select(
-      `id, name, website, industry, size, country, city, phone, email, tags, createdAt, updatedAt,
+      `id, name, website, industry, size, country, city, phone, email, linkedin, instagram, tags, createdAt, updatedAt,
        contacts(id, firstName, lastName, email, position),
        deals(id, title, value, currency, stageId)`
     )

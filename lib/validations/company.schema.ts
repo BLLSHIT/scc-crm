@@ -9,6 +9,8 @@ export const companySchema = z.object({
   city: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email('Ungültige E-Mail').optional().or(z.literal('')),
+  linkedin: z.string().optional(),
+  instagram: z.string().optional(),
   tags: z.array(z.string()).default([]),
 })
 
