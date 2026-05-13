@@ -70,7 +70,7 @@ export default async function EditProductPage({
             category: product.category ?? '',
             unit: product.unit ?? 'Stück',
             defaultPriceNet: Number(product.defaultPriceNet ?? 0),
-            defaultVatRate: Number(product.defaultVatRate ?? 19),
+            defaultVatRate: Number(product.defaultVatRate ?? 19) as 0 | 7 | 19,
             imageUrl: product.imageUrl ?? '',
             isActive: product.isActive ?? true,
           }}
