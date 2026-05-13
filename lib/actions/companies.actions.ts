@@ -1,4 +1,5 @@
 'use server'
+import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -20,6 +21,7 @@ export async function createCompany(input: CompanyInput): Promise<ActionResult> 
   const { data, error } = await supabase
     .from('companies')
     .insert({
+      id: randomUUID(),
       ...parsed.data,
       website: parsed.data.website || null,
       email: parsed.data.email || null,
