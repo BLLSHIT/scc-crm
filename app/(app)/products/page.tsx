@@ -28,6 +28,7 @@ export default async function ProductsPage() {
     return <ErrorView where="Produkte laden" err={err} />
   }
 
+  try {
   return (
     <div className="flex-1 overflow-auto">
       <Header
@@ -73,8 +74,7 @@ export default async function ProductsPage() {
                       <img
                         src={p.imageUrl}
                         alt={p.name}
-                        className="w-10 h-10 object-cover rounded border"
-                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                        className="w-10 h-10 object-cover rounded border bg-slate-50"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded border bg-slate-50 flex items-center justify-center">
@@ -94,9 +94,9 @@ export default async function ProductsPage() {
                   <td className="px-4 py-3 text-slate-600">{p.category ?? '—'}</td>
                   <td className="px-4 py-3 text-slate-600">{p.unit}</td>
                   <td className="px-4 py-3 text-right font-medium">
-                    {formatCurrency(p.defaultPriceNet, 'EUR')}
+                    {formatCurrency(Number(p.defaultPriceNet ?? 0), 'EUR')}
                   </td>
-                  <td className="px-4 py-3 text-right text-slate-500">{Number(p.defaultVatRate)}%</td>
+                  <td className="px-4 py-3 text-right text-slate-500">{Number(p.defaultVatRate ?? 0)}%</td>
                   <td className="px-4 py-3">
                     {p.isActive ? (
                       <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700">
@@ -116,4 +116,8 @@ export default async function ProductsPage() {
       </main>
     </div>
   )
+  } catch (err) {
+    if (isFrameworkError(err)) throw err
+    return <ErrorView where="Produkte rendern" err={err} />
+  }
 }
