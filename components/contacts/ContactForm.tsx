@@ -1,0 +1,109 @@
+'use client'
+import { useTransition } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { contactSchema, type ContactInput } from '@/lib/validations/contact.schema'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+interface ContactFormProps {
+  defaultValues?: Partial<ContactInput>
+  onSubmit: (data: ContactInput) => Promise<{ error?: Record<string, string[]> } | void>
+  title: string
+}
+
+export function ContactForm({ defaultValues, onSubmit, title }: ContactFormProps) {
+  const [isPending, startTransition] = useTransition()
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ContactInput>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(contactSchema) as any,
+    defaultValues: { tags: [], ...defaultValues },
+  })
+
+  function submit(data: ContactInput) {
+    startTransition(async () => {
+      await onSubmit(data)
+    })
+  }
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(submit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="firstName">Vorname *</Label>
+              <Input id="firstName" {...register('firstName')} />
+              {errors.firstName && (
+                <p className="text-xs text-red-500">{errors.firstName.message}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="lastName">Nachname *</Label>
+              <Input id="lastName" {...register('lastName')} />
+              {errors.lastName && (
+                <p className="text-xs text-red-500">{errors.lastName.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="email">E-Mail</Label>
+            <Input id="email" type="email" {...register('email')} />
+            {errors.email && (
+              <p className="text-xs text-red-500">{errors.email.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">Telefon</Label>
+            <Input id="phone" type="tel" {...register('phone')} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="position">Position</Label>
+            <Input id="position" {...register('position')} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="source">Quelle</Label>
+            <Input
+              id="source"
+              {...register('source')}
+              placeholder="z.B. Messe, Website, Empfehlung"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">Notizen</Label>
+            <Textarea id="notes" {...register('notes')} rows={4} />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Speichern…' : 'Speichern'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => history.back()}
+            >
+              Abbrechen
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
