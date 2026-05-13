@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanies } from '@/lib/db/companies'
 import { Header } from '@/components/layout/Header'
+import { SearchBar } from '@/components/layout/SearchBar'
 import { buttonVariants } from '@/components/ui/button'
 import { Plus, Mail } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
@@ -37,7 +38,8 @@ export default async function CompaniesPage({
           </Link>
         }
       />
-      <main className="p-6">
+      <main className="p-6 space-y-4">
+        <SearchBar placeholder="Firmen durchsuchen…" />
         <div className="bg-white rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b">

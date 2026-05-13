@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getContacts } from '@/lib/db/contacts'
 import { Header } from '@/components/layout/Header'
+import { SearchBar } from '@/components/layout/SearchBar'
 import { buttonVariants } from '@/components/ui/button'
 import { Plus, Mail, Phone } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
@@ -37,7 +38,8 @@ export default async function ContactsPage({
           </Link>
         }
       />
-      <main className="p-6">
+      <main className="p-6 space-y-4">
+        <SearchBar placeholder="Kontakte durchsuchen…" />
         <div className="bg-white rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b">
