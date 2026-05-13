@@ -28,7 +28,10 @@ export async function createContact(input: ContactInput): Promise<ActionResult |
     .select('id')
     .single()
 
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[createContact] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
 
   revalidatePath('/contacts')
   redirect(`/contacts/${data.id}`)
@@ -55,7 +58,10 @@ export async function updateContact(
     })
     .eq('id', id)
 
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[updateContact] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
 
   revalidatePath('/contacts')
   revalidatePath(`/contacts/${id}`)

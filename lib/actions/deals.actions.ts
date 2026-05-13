@@ -24,7 +24,10 @@ export async function createDeal(input: DealInput): Promise<ActionResult | void>
     .select('id')
     .single()
 
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[createDeal] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
 
   revalidatePath('/deals')
   redirect(`/deals/${data.id}`)
@@ -40,7 +43,10 @@ export async function moveDealStage(
     .update({ stageId, updatedAt: new Date().toISOString() })
     .eq('id', dealId)
 
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[moveDealStage] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
   revalidatePath('/deals')
 }
 
@@ -63,7 +69,10 @@ export async function updateDeal(
     })
     .eq('id', id)
 
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[updateDeal] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
 
   revalidatePath('/deals')
   revalidatePath(`/deals/${id}`)

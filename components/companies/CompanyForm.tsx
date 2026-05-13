@@ -1,5 +1,5 @@
 'use client'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { companySchema, type CompanyInput } from '@/lib/validations/company.schema'
@@ -16,6 +16,7 @@ interface CompanyFormProps {
 
 export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps) {
   const [isPending, startTransition] = useTransition()
+  const [serverError, setServerError] = useState<string | null>(null)
 
   const {
     register,
@@ -32,8 +33,16 @@ export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps
     if (data.website && !/^https?:\/\//i.test(data.website)) {
       data.website = `https://${data.website}`
     }
+    setServerError(null)
     startTransition(async () => {
-      await onSubmit(data)
+      const result = await onSubmit(data)
+      if (result?.error) {
+        const msg =
+          result.error._form?.[0] ??
+          Object.values(result.error).flat()[0] ??
+          'Unbekannter Fehler'
+        setServerError(msg)
+      }
     })
   }
 
@@ -44,6 +53,12 @@ export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
+          {serverError && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              <strong>Fehler:</strong> {serverError}
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="name">Firmenname *</Label>
             <Input id="name" {...register('name')} />
@@ -65,7 +80,7 @@ export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps
 
           <div className="space-y-1.5">
             <Label htmlFor="website">Website</Label>
-            <Input id="website" type="url" {...register('website')} placeholder="https://" />
+            <Input id="website" {...register('website')} placeholder="z.B. example.com" />
             {errors.website && (
               <p className="text-xs text-red-500">{errors.website.message}</p>
             )}

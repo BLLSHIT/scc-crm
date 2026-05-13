@@ -27,7 +27,10 @@ export async function createCompany(input: CompanyInput): Promise<ActionResult |
     .select('id')
     .single()
 
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[createCompany] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
 
   revalidatePath('/companies')
   redirect(`/companies/${data.id}`)
@@ -53,7 +56,10 @@ export async function updateCompany(
     })
     .eq('id', id)
 
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[updateCompany] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
 
   revalidatePath('/companies')
   revalidatePath(`/companies/${id}`)

@@ -1,5 +1,5 @@
 'use client'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { contactSchema, type ContactInput } from '@/lib/validations/contact.schema'
@@ -17,6 +17,7 @@ interface ContactFormProps {
 
 export function ContactForm({ defaultValues, onSubmit, title }: ContactFormProps) {
   const [isPending, startTransition] = useTransition()
+  const [serverError, setServerError] = useState<string | null>(null)
 
   const {
     register,
@@ -29,8 +30,16 @@ export function ContactForm({ defaultValues, onSubmit, title }: ContactFormProps
   })
 
   function submit(data: ContactInput) {
+    setServerError(null)
     startTransition(async () => {
-      await onSubmit(data)
+      const result = await onSubmit(data)
+      if (result?.error) {
+        const msg =
+          result.error._form?.[0] ??
+          Object.values(result.error).flat()[0] ??
+          'Unbekannter Fehler'
+        setServerError(msg)
+      }
     })
   }
 
@@ -41,6 +50,12 @@ export function ContactForm({ defaultValues, onSubmit, title }: ContactFormProps
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
+          {serverError && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              <strong>Fehler:</strong> {serverError}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="firstName">Vorname *</Label>

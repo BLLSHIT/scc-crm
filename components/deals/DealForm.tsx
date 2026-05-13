@@ -1,5 +1,5 @@
 'use client'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { dealSchema, type DealInput } from '@/lib/validations/deal.schema'
@@ -21,6 +21,7 @@ interface DealFormProps {
 
 export function DealForm({ defaultValues, onSubmit, title, pipelineId, stages }: DealFormProps) {
   const [isPending, startTransition] = useTransition()
+  const [serverError, setServerError] = useState<string | null>(null)
   const sortedStages = [...stages].sort((a, b) => a.order - b.order)
 
   const { register, handleSubmit, formState: { errors } } = useForm<DealInput>({
@@ -36,7 +37,17 @@ export function DealForm({ defaultValues, onSubmit, title, pipelineId, stages }:
   })
 
   function submit(data: DealInput) {
-    startTransition(async () => { await onSubmit(data) })
+    setServerError(null)
+    startTransition(async () => {
+      const result = await onSubmit(data)
+      if (result?.error) {
+        const msg =
+          result.error._form?.[0] ??
+          Object.values(result.error).flat()[0] ??
+          'Unbekannter Fehler'
+        setServerError(msg)
+      }
+    })
   }
 
   return (
@@ -45,6 +56,12 @@ export function DealForm({ defaultValues, onSubmit, title, pipelineId, stages }:
       <CardContent>
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <input type="hidden" {...register('pipelineId')} />
+
+          {serverError && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              <strong>Fehler:</strong> {serverError}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="title">Titel *</Label>
