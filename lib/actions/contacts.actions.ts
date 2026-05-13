@@ -71,6 +71,61 @@ export async function updateContact(
   return { redirectTo: `/contacts/${id}` }
 }
 
+export type QuickContactInput = {
+  firstName: string
+  lastName: string
+  email?: string
+  position?: string
+  companyId: string
+}
+
+export type QuickContactResult = {
+  error?: string
+  contact?: {
+    id: string
+    firstName: string
+    lastName: string
+    position: string | null
+    companyId: string | null
+  }
+}
+
+export async function createQuickContact(
+  input: QuickContactInput
+): Promise<QuickContactResult> {
+  if (!input.firstName?.trim() || !input.lastName?.trim()) {
+    return { error: 'Vor- und Nachname erforderlich.' }
+  }
+  if (!input.companyId) {
+    return { error: 'Firma erforderlich für Schnell-Anlage.' }
+  }
+
+  const supabase = await createClient()
+  const id = randomUUID()
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from('contacts')
+    .insert({
+      id,
+      firstName: input.firstName.trim(),
+      lastName: input.lastName.trim(),
+      email: input.email?.trim() || null,
+      position: input.position?.trim() || null,
+      companyId: input.companyId,
+      updatedAt: now,
+    })
+    .select('id, firstName, lastName, position, companyId')
+    .single()
+
+  if (error) {
+    console.error('[createQuickContact] Supabase error:', error)
+    return { error: error.message }
+  }
+
+  revalidatePath('/contacts')
+  return { contact: data }
+}
+
 export async function deleteContact(id: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase.from('contacts').delete().eq('id', id)

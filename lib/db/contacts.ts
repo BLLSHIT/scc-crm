@@ -44,7 +44,7 @@ export async function getAllContactOptions() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('contacts')
-    .select('id, firstName, lastName, position')
+    .select('id, firstName, lastName, position, companyId')
     .order('lastName', { ascending: true })
   if (error) {
     console.error('[getAllContactOptions] error:', error)
