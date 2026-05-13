@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getContactById } from '@/lib/db/contacts'
 import { deleteContact } from '@/lib/actions/contacts.actions'
@@ -19,8 +19,10 @@ export default async function ContactDetailPage({
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
   const { data: profile } = await supabase
-    .from('profiles').select('*').eq('id', user!.id).single()
+    .from('profiles').select('*').eq('id', user.id).single()
 
   let contact: any
   try {
@@ -28,6 +30,7 @@ export default async function ContactDetailPage({
   } catch {
     notFound()
   }
+  if (!contact) notFound()
 
   return (
     <div className="flex-1 overflow-auto">

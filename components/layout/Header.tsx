@@ -6,7 +6,7 @@ import type { Profile } from '@/types/app.types'
 interface HeaderProps {
   title: string
   actions?: React.ReactNode
-  profile: Profile
+  profile: Profile | null
 }
 
 export function Header({ title, actions, profile }: HeaderProps) {
@@ -19,7 +19,7 @@ export function Header({ title, actions, profile }: HeaderProps) {
           <Bell className="w-4 h-4" />
         </Button>
         <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-semibold">
-          {getInitials(profile.firstName, profile.lastName)}
+          {getInitials(profile?.firstName, profile?.lastName)}
         </div>
       </div>
     </header>
