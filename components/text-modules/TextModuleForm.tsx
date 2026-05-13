@@ -97,9 +97,33 @@ export function TextModuleForm({ defaultValues, onSubmit, title }: Props) {
               id="content"
               {...register('content')}
               rows={6}
-              placeholder="Text der im PDF erscheint…"
+              placeholder="Sehr geehrte/r {{kunde.anrede}} {{kunde.nachname}},…"
             />
             {errors.content && <p className="text-xs text-red-500">{errors.content.message}</p>}
+          </div>
+
+          <div className="rounded-md border border-blue-100 bg-blue-50/50 p-3 space-y-2">
+            <p className="text-xs font-semibold text-blue-900">Verfügbare Platzhalter</p>
+            <p className="text-xs text-blue-800">
+              Werden beim PDF-Erzeugen automatisch ersetzt. Doppelt geschweifte Klammern.
+            </p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono text-blue-900">
+              <code>{'{{kunde.firma}}'}</code>
+              <code>{'{{kunde.anrede}}'}</code>
+              <code>{'{{kunde.vorname}}'}</code>
+              <code>{'{{kunde.nachname}}'}</code>
+              <code>{'{{kunde.email}}'}</code>
+              <code>{'{{kunde.adresse}}'}</code>
+              <code>{'{{datum}}'}</code>
+              <code>{'{{angebot.nummer}}'}</code>
+              <code>{'{{angebot.gueltig_bis}}'}</code>
+              <code>{'{{rechnung.nummer}}'}</code>
+              <code>{'{{rechnung.faellig}}'}</code>
+              <code>{'{{scc.name}}'}</code>
+              <code>{'{{scc.email}}'}</code>
+              <code>{'{{scc.mobil}}'}</code>
+              <code>{'{{scc.position}}'}</code>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 items-end">
