@@ -7,7 +7,7 @@ import { deleteCompany } from '@/lib/actions/companies.actions'
 import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, Phone, Globe, Linkedin, Instagram, Pencil, Trash2, User } from 'lucide-react'
+import { Mail, Phone, Globe, ExternalLink, AtSign, Pencil, Trash2, User } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
@@ -161,7 +161,7 @@ export default async function CompanyDetailPage({
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-blue-600 hover:underline break-all"
                     >
-                      <Linkedin className="w-4 h-4" />
+                      <ExternalLink className="w-4 h-4" />
                       {company.linkedin}
                     </a>
                   </div>
@@ -179,7 +179,7 @@ export default async function CompanyDetailPage({
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-pink-600 hover:underline"
                     >
-                      <Instagram className="w-4 h-4" />
+                      <AtSign className="w-4 h-4" />
                       {company.instagram}
                     </a>
                   </div>

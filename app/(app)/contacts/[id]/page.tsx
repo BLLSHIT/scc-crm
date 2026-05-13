@@ -8,7 +8,7 @@ import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, Phone, Smartphone, Linkedin, Instagram, Building2, Pencil, Trash2 } from 'lucide-react'
+import { Mail, Phone, Smartphone, ExternalLink, AtSign, Building2, Pencil, Trash2 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import type { Profile } from '@/types/app.types'
 
@@ -167,7 +167,7 @@ export default async function ContactDetailPage({
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-blue-600 hover:underline break-all"
                     >
-                      <Linkedin className="w-4 h-4" />
+                      <ExternalLink className="w-4 h-4" />
                       {contact.linkedin}
                     </a>
                   </div>
@@ -185,7 +185,7 @@ export default async function ContactDetailPage({
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-pink-600 hover:underline"
                     >
-                      <Instagram className="w-4 h-4" />
+                      <AtSign className="w-4 h-4" />
                       {contact.instagram}
                     </a>
                   </div>
