@@ -10,6 +10,9 @@ import {
   FileText,
   Receipt,
   CheckSquare,
+  Package,
+  AlignLeft,
+  UserCog,
   Settings,
   LogOut,
 } from 'lucide-react'
@@ -18,14 +21,17 @@ import { cn, getInitials } from '@/lib/utils/format'
 import type { Profile } from '@/types/app.types'
 
 const navItems = [
-  { label: 'Dashboard',  href: '/',           icon: LayoutDashboard },
-  { label: 'Kontakte',   href: '/contacts',   icon: Users },
-  { label: 'Firmen',     href: '/companies',  icon: Building2 },
-  { label: 'Deals',      href: '/deals',      icon: TrendingUp },
-  { label: 'Projekte',   href: '/projects',   icon: FolderKanban },
-  { label: 'Angebote',   href: '/offers',     icon: FileText },
-  { label: 'Rechnungen', href: '/invoices',   icon: Receipt },
-  { label: 'Aufgaben',   href: '/tasks',      icon: CheckSquare },
+  { label: 'Dashboard',     href: '/',              icon: LayoutDashboard },
+  { label: 'Kontakte',      href: '/contacts',      icon: Users },
+  { label: 'Firmen',        href: '/companies',     icon: Building2 },
+  { label: 'Deals',         href: '/deals',         icon: TrendingUp },
+  { label: 'Projekte',      href: '/projects',      icon: FolderKanban },
+  { label: 'Angebote',      href: '/quotes',        icon: FileText },
+  { label: 'Rechnungen',    href: '/invoices',      icon: Receipt },
+  { label: 'Aufgaben',      href: '/tasks',         icon: CheckSquare },
+  { label: 'Produkte',      href: '/products',      icon: Package },
+  { label: 'Textbausteine', href: '/text-modules',  icon: AlignLeft },
+  { label: 'Team',          href: '/teams',         icon: UserCog },
 ]
 
 interface SidebarProps {
