@@ -12,19 +12,34 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ActionResult } from '@/lib/actions/deals.actions'
 
 interface Stage { id: string; name: string; order: number }
+interface CompanyOption { id: string; name: string }
+interface ContactOption { id: string; firstName: string; lastName: string; position?: string | null }
 
 interface DealFormProps {
   defaultValues?: Partial<DealInput>
-  onSubmit: (data: DealInput) => Promise<ActionResult>
+  defaultContactIds?: string[]
+  onSubmit: (data: DealInput, contactIds: string[]) => Promise<ActionResult>
   title: string
   pipelineId: string
   stages: Stage[]
+  companies?: CompanyOption[]
+  contacts?: ContactOption[]
 }
 
-export function DealForm({ defaultValues, onSubmit, title, pipelineId, stages }: DealFormProps) {
+export function DealForm({
+  defaultValues,
+  defaultContactIds = [],
+  onSubmit,
+  title,
+  pipelineId,
+  stages,
+  companies = [],
+  contacts = [],
+}: DealFormProps) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>(defaultContactIds)
   const sortedStages = [...stages].sort((a, b) => a.order - b.order)
 
   const { register, handleSubmit, formState: { errors } } = useForm<DealInput>({
@@ -39,11 +54,17 @@ export function DealForm({ defaultValues, onSubmit, title, pipelineId, stages }:
     },
   })
 
+  function toggleContact(id: string) {
+    setSelectedContactIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
   async function submit(data: DealInput) {
     setServerError(null)
     setIsPending(true)
     try {
-      const result = await onSubmit(data)
+      const result = await onSubmit(data, selectedContactIds)
       if (result.error) {
         const msg =
           result.error._form?.[0] ??
@@ -102,6 +123,54 @@ export function DealForm({ defaultValues, onSubmit, title, pipelineId, stages }:
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="companyId">Firma</Label>
+            <select
+              id="companyId"
+              {...register('companyId')}
+              className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
+            >
+              <option value="">— keine Firma —</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Ansprechpersonen</Label>
+            {contacts.length === 0 ? (
+              <p className="text-xs text-slate-500">
+                Noch keine Kontakte. Lege zuerst Kontakte an, um sie hier zu verknüpfen.
+              </p>
+            ) : (
+              <div className="border border-input rounded-md max-h-48 overflow-y-auto divide-y">
+                {contacts.map((c) => {
+                  const checked = selectedContactIds.includes(c.id)
+                  return (
+                    <label
+                      key={c.id}
+                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleContact(c.id)}
+                      />
+                      <span className="font-medium">{c.firstName} {c.lastName}</span>
+                      {c.position && <span className="text-slate-500">— {c.position}</span>}
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+            {selectedContactIds.length > 0 && (
+              <p className="text-xs text-slate-500">
+                {selectedContactIds.length} Person(en) ausgewählt
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">

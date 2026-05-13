@@ -56,6 +56,16 @@ export async function getDealById(id: string) {
     console.error('[getDealById] error:', JSON.stringify(error))
     throw new Error(error.message)
   }
-  // Deal-Contacts (Stakeholder) separat — Nested-Join verursachte Probleme
-  return { ...data, contacts: [] }
+
+  // Deal-Contacts (Stakeholder) separat laden — Nested-Join über Junction-Tabelle
+  // verursachte intermittierende Probleme mit PostgREST
+  const { data: dcRows, error: dcError } = await supabase
+    .from('deal_contacts')
+    .select('role, contact:contacts(id, firstName, lastName, email, position)')
+    .eq('dealId', id)
+  if (dcError) {
+    console.error('[getDealById] deal_contacts error:', dcError)
+  }
+
+  return { ...data, contacts: dcRows ?? [] }
 }

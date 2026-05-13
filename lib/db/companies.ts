@@ -31,6 +31,19 @@ export async function getCompanies(filters: CompanyFilters = {}) {
   return { companies: data ?? [], total: count ?? 0, page, limit }
 }
 
+export async function getAllCompanyOptions() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('companies')
+    .select('id, name')
+    .order('name', { ascending: true })
+  if (error) {
+    console.error('[getAllCompanyOptions] error:', error)
+    return []
+  }
+  return data ?? []
+}
+
 export async function getCompanyById(id: string) {
   const supabase = await createClient()
 

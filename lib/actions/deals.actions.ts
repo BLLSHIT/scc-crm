@@ -7,7 +7,31 @@ import { dealSchema, type DealInput } from '@/lib/validations/deal.schema'
 
 export type ActionResult = { error?: Record<string, string[]>; redirectTo?: string }
 
-export async function createDeal(input: DealInput): Promise<ActionResult> {
+async function syncDealContacts(dealId: string, contactIds: string[]) {
+  const supabase = await createClient()
+  // Delete all existing links for this deal
+  const { error: delError } = await supabase
+    .from('deal_contacts')
+    .delete()
+    .eq('dealId', dealId)
+  if (delError) {
+    console.error('[syncDealContacts] delete error:', delError)
+    return delError.message
+  }
+  if (contactIds.length === 0) return null
+  const rows = contactIds.map((contactId) => ({ dealId, contactId, role: null }))
+  const { error: insError } = await supabase.from('deal_contacts').insert(rows)
+  if (insError) {
+    console.error('[syncDealContacts] insert error:', insError)
+    return insError.message
+  }
+  return null
+}
+
+export async function createDeal(
+  input: DealInput,
+  contactIds: string[] = []
+): Promise<ActionResult> {
   const parsed = dealSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
 
@@ -29,6 +53,13 @@ export async function createDeal(input: DealInput): Promise<ActionResult> {
   if (error) {
     console.error('[createDeal] Supabase error:', error)
     return { error: { _form: [error.message] } }
+  }
+
+  if (contactIds.length > 0) {
+    const syncErr = await syncDealContacts(data.id, contactIds)
+    if (syncErr) {
+      return { error: { _form: [`Deal angelegt, aber Verknüpfung der Ansprechpersonen fehlgeschlagen: ${syncErr}`] } }
+    }
   }
 
   revalidatePath('/deals')
@@ -55,7 +86,8 @@ export async function moveDealStage(
 
 export async function updateDeal(
   id: string,
-  input: DealInput
+  input: DealInput,
+  contactIds: string[] = []
 ): Promise<ActionResult> {
   const parsed = dealSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
@@ -75,6 +107,11 @@ export async function updateDeal(
   if (error) {
     console.error('[updateDeal] Supabase error:', error)
     return { error: { _form: [error.message] } }
+  }
+
+  const syncErr = await syncDealContacts(id, contactIds)
+  if (syncErr) {
+    return { error: { _form: [`Deal gespeichert, aber Verknüpfung der Ansprechpersonen fehlgeschlagen: ${syncErr}`] } }
   }
 
   revalidatePath('/deals')

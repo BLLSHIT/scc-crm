@@ -11,13 +11,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ActionResult } from '@/lib/actions/contacts.actions'
 
+interface CompanyOption { id: string; name: string }
+
 interface ContactFormProps {
   defaultValues?: Partial<ContactInput>
   onSubmit: (data: ContactInput) => Promise<ActionResult>
   title: string
+  companies?: CompanyOption[]
 }
 
-export function ContactForm({ defaultValues, onSubmit, title }: ContactFormProps) {
+export function ContactForm({ defaultValues, onSubmit, title, companies = [] }: ContactFormProps) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -100,6 +103,20 @@ export function ContactForm({ defaultValues, onSubmit, title }: ContactFormProps
           <div className="space-y-1.5">
             <Label htmlFor="position">Position</Label>
             <Input id="position" {...register('position')} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="companyId">Firma</Label>
+            <select
+              id="companyId"
+              {...register('companyId')}
+              className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
+            >
+              <option value="">— keine Firma —</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">

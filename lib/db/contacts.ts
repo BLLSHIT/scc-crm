@@ -40,6 +40,32 @@ export async function getContacts(filters: ContactFilters = {}) {
   return { contacts: data ?? [], total: count ?? 0, page, limit }
 }
 
+export async function getAllContactOptions() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('contacts')
+    .select('id, firstName, lastName, position')
+    .order('lastName', { ascending: true })
+  if (error) {
+    console.error('[getAllContactOptions] error:', error)
+    return []
+  }
+  return data ?? []
+}
+
+export async function getDealContactIds(dealId: string): Promise<string[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('deal_contacts')
+    .select('contactId')
+    .eq('dealId', dealId)
+  if (error) {
+    console.error('[getDealContactIds] error:', error)
+    return []
+  }
+  return (data ?? []).map((r: { contactId: string }) => r.contactId)
+}
+
 export async function getContactById(id: string) {
   const supabase = await createClient()
 

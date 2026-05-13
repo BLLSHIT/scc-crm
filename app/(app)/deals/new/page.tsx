@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/Header'
 import { DealForm } from '@/components/deals/DealForm'
 import { createDeal } from '@/lib/actions/deals.actions'
+import { getAllCompanyOptions } from '@/lib/db/companies'
+import { getAllContactOptions } from '@/lib/db/contacts'
 import type { Profile } from '@/types/app.types'
 
 function isFrameworkError(err: any): boolean {
@@ -73,6 +75,11 @@ export default async function NewDealPage() {
     )
   }
 
+  const [companies, contacts] = await Promise.all([
+    getAllCompanyOptions(),
+    getAllContactOptions(),
+  ])
+
   try {
     return (
       <div className="flex-1 overflow-auto">
@@ -82,6 +89,8 @@ export default async function NewDealPage() {
             title="Deal erstellen"
             pipelineId={pipeline.id ?? ''}
             stages={pipeline.stages ?? []}
+            companies={companies}
+            contacts={contacts}
             onSubmit={createDeal}
           />
         </main>

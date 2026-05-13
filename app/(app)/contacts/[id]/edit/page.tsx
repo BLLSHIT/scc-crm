@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getContactById } from '@/lib/db/contacts'
+import { getAllCompanyOptions } from '@/lib/db/companies'
 import { updateContact } from '@/lib/actions/contacts.actions'
 import { Header } from '@/components/layout/Header'
 import { ContactForm } from '@/components/contacts/ContactForm'
@@ -77,6 +78,8 @@ export default async function EditContactPage({
     )
   }
 
+  const companies = await getAllCompanyOptions()
+
   try {
     return (
       <div className="flex-1 overflow-auto">
@@ -84,6 +87,7 @@ export default async function EditContactPage({
         <main className="p-6">
           <ContactForm
             title="Kontakt bearbeiten"
+            companies={companies}
             defaultValues={{
               firstName: contact.firstName ?? '',
               lastName: contact.lastName ?? '',

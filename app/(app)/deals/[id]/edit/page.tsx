@@ -2,6 +2,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getDealById } from '@/lib/db/deals'
+import { getAllCompanyOptions } from '@/lib/db/companies'
+import { getAllContactOptions, getDealContactIds } from '@/lib/db/contacts'
 import { updateDeal } from '@/lib/actions/deals.actions'
 import { Header } from '@/components/layout/Header'
 import { DealForm } from '@/components/deals/DealForm'
@@ -57,6 +59,12 @@ export default async function EditDealPage({
     )
   }
 
+  const [companies, contactOptions, defaultContactIds] = await Promise.all([
+    getAllCompanyOptions(),
+    getAllContactOptions(),
+    getDealContactIds(id),
+  ])
+
   try {
     return (
       <div className="flex-1 overflow-auto">
@@ -66,6 +74,9 @@ export default async function EditDealPage({
             title="Deal bearbeiten"
             pipelineId={deal.pipelineId}
             stages={stages}
+            companies={companies}
+            contacts={contactOptions}
+            defaultContactIds={defaultContactIds}
             defaultValues={{
               title: deal.title ?? '',
               value: Number(deal.value ?? 0),
