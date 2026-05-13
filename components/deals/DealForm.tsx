@@ -1,5 +1,6 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { dealSchema, type DealInput } from '@/lib/validations/deal.schema'
@@ -8,19 +9,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { ActionResult } from '@/lib/actions/deals.actions'
 
 interface Stage { id: string; name: string; order: number }
 
 interface DealFormProps {
   defaultValues?: Partial<DealInput>
-  onSubmit: (data: DealInput) => Promise<{ error?: Record<string, string[]> } | void>
+  onSubmit: (data: DealInput) => Promise<ActionResult>
   title: string
   pipelineId: string
   stages: Stage[]
 }
 
 export function DealForm({ defaultValues, onSubmit, title, pipelineId, stages }: DealFormProps) {
-  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+  const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const sortedStages = [...stages].sort((a, b) => a.order - b.order)
 
@@ -36,18 +39,26 @@ export function DealForm({ defaultValues, onSubmit, title, pipelineId, stages }:
     },
   })
 
-  function submit(data: DealInput) {
+  async function submit(data: DealInput) {
     setServerError(null)
-    startTransition(async () => {
+    setIsPending(true)
+    try {
       const result = await onSubmit(data)
-      if (result?.error) {
+      if (result.error) {
         const msg =
           result.error._form?.[0] ??
           Object.values(result.error).flat()[0] ??
-          'Unbekannter Fehler'
+          'Unbekannter Fehler beim Speichern.'
         setServerError(msg)
+      } else if (result.redirectTo) {
+        router.push(result.redirectTo)
       }
-    })
+    } catch (e) {
+      console.error('DealForm submit error:', e)
+      setServerError('Ein unerwarteter Fehler ist aufgetreten.')
+    } finally {
+      setIsPending(false)
+    }
   }
 
   return (
@@ -107,7 +118,7 @@ export function DealForm({ defaultValues, onSubmit, title, pipelineId, stages }:
             <Button type="submit" disabled={isPending}>
               {isPending ? 'Speichern…' : 'Speichern'}
             </Button>
-            <Button type="button" variant="outline" onClick={() => history.back()}>
+            <Button type="button" variant="outline" onClick={() => router.back()}>
               Abbrechen
             </Button>
           </div>

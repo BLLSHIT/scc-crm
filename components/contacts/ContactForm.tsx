@@ -1,5 +1,6 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { contactSchema, type ContactInput } from '@/lib/validations/contact.schema'
@@ -8,15 +9,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { ActionResult } from '@/lib/actions/contacts.actions'
 
 interface ContactFormProps {
   defaultValues?: Partial<ContactInput>
-  onSubmit: (data: ContactInput) => Promise<{ error?: Record<string, string[]> } | void>
+  onSubmit: (data: ContactInput) => Promise<ActionResult>
   title: string
 }
 
 export function ContactForm({ defaultValues, onSubmit, title }: ContactFormProps) {
-  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+  const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
@@ -29,18 +32,26 @@ export function ContactForm({ defaultValues, onSubmit, title }: ContactFormProps
     defaultValues: { tags: [], ...defaultValues },
   })
 
-  function submit(data: ContactInput) {
+  async function submit(data: ContactInput) {
     setServerError(null)
-    startTransition(async () => {
+    setIsPending(true)
+    try {
       const result = await onSubmit(data)
-      if (result?.error) {
+      if (result.error) {
         const msg =
           result.error._form?.[0] ??
           Object.values(result.error).flat()[0] ??
-          'Unbekannter Fehler'
+          'Unbekannter Fehler beim Speichern.'
         setServerError(msg)
+      } else if (result.redirectTo) {
+        router.push(result.redirectTo)
       }
-    })
+    } catch (e) {
+      console.error('ContactForm submit error:', e)
+      setServerError('Ein unerwarteter Fehler ist aufgetreten.')
+    } finally {
+      setIsPending(false)
+    }
   }
 
   return (
@@ -112,7 +123,7 @@ export function ContactForm({ defaultValues, onSubmit, title }: ContactFormProps
             <Button
               type="button"
               variant="outline"
-              onClick={() => history.back()}
+              onClick={() => router.back()}
             >
               Abbrechen
             </Button>

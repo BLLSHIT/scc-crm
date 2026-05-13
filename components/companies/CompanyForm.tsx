@@ -1,5 +1,6 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { companySchema, type CompanyInput } from '@/lib/validations/company.schema'
@@ -7,15 +8,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { ActionResult } from '@/lib/actions/companies.actions'
 
 interface CompanyFormProps {
   defaultValues?: Partial<CompanyInput>
-  onSubmit: (data: CompanyInput) => Promise<{ error?: Record<string, string[]> } | void>
+  onSubmit: (data: CompanyInput) => Promise<ActionResult>
   title: string
 }
 
 export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps) {
-  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+  const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
@@ -28,22 +31,30 @@ export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps
     defaultValues: { tags: [], ...defaultValues },
   })
 
-  function submit(data: CompanyInput) {
+  async function submit(data: CompanyInput) {
     // Auto-prepend https:// if the user typed a URL without a protocol
     if (data.website && !/^https?:\/\//i.test(data.website)) {
       data.website = `https://${data.website}`
     }
     setServerError(null)
-    startTransition(async () => {
+    setIsPending(true)
+    try {
       const result = await onSubmit(data)
-      if (result?.error) {
+      if (result.error) {
         const msg =
           result.error._form?.[0] ??
           Object.values(result.error).flat()[0] ??
-          'Unbekannter Fehler'
+          'Unbekannter Fehler beim Speichern.'
         setServerError(msg)
+      } else if (result.redirectTo) {
+        router.push(result.redirectTo)
       }
-    })
+    } catch (e) {
+      console.error('CompanyForm submit error:', e)
+      setServerError('Ein unerwarteter Fehler ist aufgetreten.')
+    } finally {
+      setIsPending(false)
+    }
   }
 
   return (
@@ -115,7 +126,7 @@ export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps
             <Button type="submit" disabled={isPending}>
               {isPending ? 'Speichern…' : 'Speichern'}
             </Button>
-            <Button type="button" variant="outline" onClick={() => history.back()}>
+            <Button type="button" variant="outline" onClick={() => router.back()}>
               Abbrechen
             </Button>
           </div>

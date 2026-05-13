@@ -6,9 +6,10 @@ import { companySchema, type CompanyInput } from '@/lib/validations/company.sche
 
 export type ActionResult = {
   error?: Record<string, string[]>
+  redirectTo?: string
 }
 
-export async function createCompany(input: CompanyInput): Promise<ActionResult | void> {
+export async function createCompany(input: CompanyInput): Promise<ActionResult> {
   const parsed = companySchema.safeParse(input)
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors }
@@ -33,13 +34,13 @@ export async function createCompany(input: CompanyInput): Promise<ActionResult |
   }
 
   revalidatePath('/companies')
-  redirect(`/companies/${data.id}`)
+  return { redirectTo: `/companies/${data.id}` }
 }
 
 export async function updateCompany(
   id: string,
   input: CompanyInput
-): Promise<ActionResult | void> {
+): Promise<ActionResult> {
   const parsed = companySchema.safeParse(input)
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors }
@@ -63,13 +64,16 @@ export async function updateCompany(
 
   revalidatePath('/companies')
   revalidatePath(`/companies/${id}`)
-  redirect(`/companies/${id}`)
+  return { redirectTo: `/companies/${id}` }
 }
 
-export async function deleteCompany(id: string): Promise<ActionResult | void> {
+export async function deleteCompany(id: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase.from('companies').delete().eq('id', id)
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[deleteCompany] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
 
   revalidatePath('/companies')
   redirect('/companies')

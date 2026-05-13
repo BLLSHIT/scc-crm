@@ -6,9 +6,10 @@ import { contactSchema, type ContactInput } from '@/lib/validations/contact.sche
 
 export type ActionResult = {
   error?: Record<string, string[]>
+  redirectTo?: string
 }
 
-export async function createContact(input: ContactInput): Promise<ActionResult | void> {
+export async function createContact(input: ContactInput): Promise<ActionResult> {
   const parsed = contactSchema.safeParse(input)
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors }
@@ -34,13 +35,13 @@ export async function createContact(input: ContactInput): Promise<ActionResult |
   }
 
   revalidatePath('/contacts')
-  redirect(`/contacts/${data.id}`)
+  return { redirectTo: `/contacts/${data.id}` }
 }
 
 export async function updateContact(
   id: string,
   input: ContactInput
-): Promise<ActionResult | void> {
+): Promise<ActionResult> {
   const parsed = contactSchema.safeParse(input)
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors }
@@ -65,13 +66,16 @@ export async function updateContact(
 
   revalidatePath('/contacts')
   revalidatePath(`/contacts/${id}`)
-  redirect(`/contacts/${id}`)
+  return { redirectTo: `/contacts/${id}` }
 }
 
-export async function deleteContact(id: string): Promise<ActionResult | void> {
+export async function deleteContact(id: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase.from('contacts').delete().eq('id', id)
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[deleteContact] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
 
   revalidatePath('/contacts')
   redirect('/contacts')

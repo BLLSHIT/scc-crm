@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { dealSchema, type DealInput } from '@/lib/validations/deal.schema'
 
-export type ActionResult = { error?: Record<string, string[]> }
+export type ActionResult = { error?: Record<string, string[]>; redirectTo?: string }
 
-export async function createDeal(input: DealInput): Promise<ActionResult | void> {
+export async function createDeal(input: DealInput): Promise<ActionResult> {
   const parsed = dealSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
 
@@ -30,13 +30,13 @@ export async function createDeal(input: DealInput): Promise<ActionResult | void>
   }
 
   revalidatePath('/deals')
-  redirect(`/deals/${data.id}`)
+  return { redirectTo: `/deals/${data.id}` }
 }
 
 export async function moveDealStage(
   dealId: string,
   stageId: string
-): Promise<ActionResult | void> {
+): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase
     .from('deals')
@@ -48,12 +48,13 @@ export async function moveDealStage(
     return { error: { _form: [error.message] } }
   }
   revalidatePath('/deals')
+  return {}
 }
 
 export async function updateDeal(
   id: string,
   input: DealInput
-): Promise<ActionResult | void> {
+): Promise<ActionResult> {
   const parsed = dealSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
 
@@ -76,13 +77,16 @@ export async function updateDeal(
 
   revalidatePath('/deals')
   revalidatePath(`/deals/${id}`)
-  redirect(`/deals/${id}`)
+  return { redirectTo: `/deals/${id}` }
 }
 
-export async function deleteDeal(id: string): Promise<ActionResult | void> {
+export async function deleteDeal(id: string): Promise<ActionResult> {
   const supabase = await createClient()
   const { error } = await supabase.from('deals').delete().eq('id', id)
-  if (error) return { error: { _form: [error.message] } }
+  if (error) {
+    console.error('[deleteDeal] Supabase error:', error)
+    return { error: { _form: [error.message] } }
+  }
 
   revalidatePath('/deals')
   redirect('/deals')
