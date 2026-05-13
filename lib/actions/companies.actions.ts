@@ -15,12 +15,14 @@ export async function createCompany(input: CompanyInput): Promise<ActionResult |
   }
 
   const supabase = await createClient()
+  const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('companies')
     .insert({
       ...parsed.data,
       website: parsed.data.website || null,
       email: parsed.data.email || null,
+      updatedAt: now,
     })
     .select('id')
     .single()
@@ -47,6 +49,7 @@ export async function updateCompany(
       ...parsed.data,
       website: parsed.data.website || null,
       email: parsed.data.email || null,
+      updatedAt: new Date().toISOString(),
     })
     .eq('id', id)
 

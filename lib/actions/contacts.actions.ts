@@ -15,6 +15,7 @@ export async function createContact(input: ContactInput): Promise<ActionResult |
   }
 
   const supabase = await createClient()
+  const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('contacts')
     .insert({
@@ -22,6 +23,7 @@ export async function createContact(input: ContactInput): Promise<ActionResult |
       email: parsed.data.email || null,
       companyId: parsed.data.companyId || null,
       ownerId: parsed.data.ownerId || null,
+      updatedAt: now,
     })
     .select('id')
     .single()
@@ -49,6 +51,7 @@ export async function updateContact(
       email: parsed.data.email || null,
       companyId: parsed.data.companyId || null,
       ownerId: parsed.data.ownerId || null,
+      updatedAt: new Date().toISOString(),
     })
     .eq('id', id)
 

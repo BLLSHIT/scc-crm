@@ -28,6 +28,10 @@ export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps
   })
 
   function submit(data: CompanyInput) {
+    // Auto-prepend https:// if the user typed a URL without a protocol
+    if (data.website && !/^https?:\/\//i.test(data.website)) {
+      data.website = `https://${data.website}`
+    }
     startTransition(async () => {
       await onSubmit(data)
     })

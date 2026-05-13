@@ -11,6 +11,7 @@ export async function createDeal(input: DealInput): Promise<ActionResult | void>
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
 
   const supabase = await createClient()
+  const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('deals')
     .insert({
@@ -18,6 +19,7 @@ export async function createDeal(input: DealInput): Promise<ActionResult | void>
       expectedCloseAt: parsed.data.expectedCloseAt || null,
       companyId: parsed.data.companyId || null,
       ownerId: parsed.data.ownerId || null,
+      updatedAt: now,
     })
     .select('id')
     .single()
@@ -35,7 +37,7 @@ export async function moveDealStage(
   const supabase = await createClient()
   const { error } = await supabase
     .from('deals')
-    .update({ stageId })
+    .update({ stageId, updatedAt: new Date().toISOString() })
     .eq('id', dealId)
 
   if (error) return { error: { _form: [error.message] } }
@@ -57,6 +59,7 @@ export async function updateDeal(
       expectedCloseAt: parsed.data.expectedCloseAt || null,
       companyId: parsed.data.companyId || null,
       ownerId: parsed.data.ownerId || null,
+      updatedAt: new Date().toISOString(),
     })
     .eq('id', id)
 
