@@ -1,0 +1,52 @@
+import { createClient } from '@/lib/supabase/server'
+
+export interface CompanyFilters {
+  q?: string
+  page?: number
+  limit?: number
+}
+
+export async function getCompanies(filters: CompanyFilters = {}) {
+  const supabase = await createClient()
+  const page = filters.page ?? 1
+  const limit = filters.limit ?? 25
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+
+  let query = supabase
+    .from('companies')
+    .select('id, name, industry, city, country, phone, email, createdAt, updatedAt', {
+      count: 'exact',
+    })
+    .order('createdAt', { ascending: false })
+    .range(from, to)
+
+  if (filters.q) {
+    query = query.ilike('name', `%${filters.q}%`)
+  }
+
+  const { data, error, count } = await query
+  if (error) throw new Error(error.message)
+
+  return { companies: data ?? [], total: count ?? 0, page, limit }
+}
+
+export async function getCompanyById(id: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('companies')
+    .select(
+      `*,
+       contacts(id, firstName, lastName, email, position),
+       deals(
+         id, title, value, currency,
+         stage:pipeline_stages(id, name, color)
+       )`
+    )
+    .eq('id', id)
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}
