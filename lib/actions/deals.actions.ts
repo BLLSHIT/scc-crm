@@ -45,6 +45,7 @@ export async function createDeal(
       expectedCloseAt: parsed.data.expectedCloseAt || null,
       companyId: parsed.data.companyId || null,
       ownerId: parsed.data.ownerId || null,
+      teamMemberId: parsed.data.teamMemberId || null,
       updatedAt: now,
     })
     .select('id')
@@ -100,6 +101,7 @@ export async function updateDeal(
       expectedCloseAt: parsed.data.expectedCloseAt || null,
       companyId: parsed.data.companyId || null,
       ownerId: parsed.data.ownerId || null,
+      teamMemberId: parsed.data.teamMemberId || null,
       updatedAt: new Date().toISOString(),
     })
     .eq('id', id)

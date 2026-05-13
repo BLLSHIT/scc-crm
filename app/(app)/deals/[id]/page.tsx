@@ -7,7 +7,7 @@ import { deleteDeal } from '@/lib/actions/deals.actions'
 import { Header } from '@/components/layout/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Building2, Users, Pencil, Trash2, Calendar } from 'lucide-react'
+import { Building2, Users, Pencil, Trash2, Calendar, UserCheck, Mail, Phone } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import type { Profile } from '@/types/app.types'
 
@@ -186,6 +186,43 @@ export default async function DealDetailPage({
           </div>
 
           <div className="space-y-6">
+            {deal.teamMember && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <UserCheck className="w-4 h-4 text-blue-600" />
+                    Ansprechpartner SCC
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-2">
+                  <p className="font-medium text-slate-900">
+                    {deal.teamMember.firstName} {deal.teamMember.lastName}
+                  </p>
+                  {deal.teamMember.position && (
+                    <p className="text-slate-500">{deal.teamMember.position}</p>
+                  )}
+                  {deal.teamMember.email && (
+                    <a
+                      href={`mailto:${deal.teamMember.email}`}
+                      className="flex items-center gap-2 text-blue-600 hover:underline"
+                    >
+                      <Mail className="w-3 h-3" />
+                      {deal.teamMember.email}
+                    </a>
+                  )}
+                  {deal.teamMember.mobile && (
+                    <a
+                      href={`tel:${deal.teamMember.mobile}`}
+                      className="flex items-center gap-2 text-slate-700 hover:text-blue-600"
+                    >
+                      <Phone className="w-3 h-3" />
+                      {deal.teamMember.mobile}
+                    </a>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {deal.company && (
               <Card>
                 <CardHeader><CardTitle>Firma</CardTitle></CardHeader>

@@ -6,6 +6,7 @@ import { DealForm } from '@/components/deals/DealForm'
 import { createDeal } from '@/lib/actions/deals.actions'
 import { getAllCompanyOptions } from '@/lib/db/companies'
 import { getAllContactOptions } from '@/lib/db/contacts'
+import { getActiveTeamMemberOptions } from '@/lib/db/team-members'
 import type { Profile } from '@/types/app.types'
 
 function isFrameworkError(err: any): boolean {
@@ -75,9 +76,10 @@ export default async function NewDealPage() {
     )
   }
 
-  const [companies, contacts] = await Promise.all([
+  const [companies, contacts, teamMembers] = await Promise.all([
     getAllCompanyOptions(),
     getAllContactOptions(),
+    getActiveTeamMemberOptions(),
   ])
 
   try {
@@ -91,6 +93,7 @@ export default async function NewDealPage() {
             stages={pipeline.stages ?? []}
             companies={companies}
             contacts={contacts}
+            teamMembers={teamMembers}
             onSubmit={createDeal}
           />
         </main>

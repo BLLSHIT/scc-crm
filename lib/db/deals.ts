@@ -44,9 +44,10 @@ export async function getDealById(id: string) {
     .from('deals')
     .select(
       `id, title, value, currency, probability, expectedCloseAt, description, lostReason,
-       pipelineId, stageId, companyId, ownerId, createdAt, updatedAt,
+       pipelineId, stageId, companyId, ownerId, teamMemberId, createdAt, updatedAt,
        company:companies(id, name),
        owner:profiles(id, firstName, lastName),
+       teamMember:team_members(id, firstName, lastName, email, mobile, position),
        stage:pipeline_stages(id, name, color, isWon, isLost),
        pipeline:pipelines(id, name)`
     )

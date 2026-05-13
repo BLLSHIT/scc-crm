@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getDealById } from '@/lib/db/deals'
 import { getAllCompanyOptions } from '@/lib/db/companies'
 import { getAllContactOptions, getDealContactIds } from '@/lib/db/contacts'
+import { getActiveTeamMemberOptions } from '@/lib/db/team-members'
 import { updateDeal } from '@/lib/actions/deals.actions'
 import { Header } from '@/components/layout/Header'
 import { DealForm } from '@/components/deals/DealForm'
@@ -59,10 +60,11 @@ export default async function EditDealPage({
     )
   }
 
-  const [companies, contactOptions, defaultContactIds] = await Promise.all([
+  const [companies, contactOptions, defaultContactIds, teamMembers] = await Promise.all([
     getAllCompanyOptions(),
     getAllContactOptions(),
     getDealContactIds(id),
+    getActiveTeamMemberOptions(),
   ])
 
   try {
@@ -76,6 +78,7 @@ export default async function EditDealPage({
             stages={stages}
             companies={companies}
             contacts={contactOptions}
+            teamMembers={teamMembers}
             defaultContactIds={defaultContactIds}
             defaultValues={{
               title: deal.title ?? '',
@@ -90,6 +93,7 @@ export default async function EditDealPage({
               stageId: deal.stageId,
               companyId: deal.companyId ?? '',
               ownerId: deal.ownerId ?? '',
+              teamMemberId: deal.teamMemberId ?? '',
             }}
             onSubmit={updateDeal.bind(null, id)}
           />

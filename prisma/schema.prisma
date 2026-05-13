@@ -13,6 +13,24 @@ enum UserRole {
   viewer
 }
 
+model TeamMember {
+  id        String  @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String  @unique
+  mobile    String?
+  position  String?
+  avatarUrl String?
+  isActive  Boolean @default(true)
+
+  deals Deal[] @relation("DealTeamMember")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("team_members")
+}
+
 model Profile {
   id        String   @id
   email     String   @unique
@@ -169,6 +187,9 @@ model Deal {
   company    Company?      @relation(fields: [companyId], references: [id])
   ownerId    String?
   owner      Profile?      @relation("DealOwner", fields: [ownerId], references: [id])
+
+  teamMemberId String?
+  teamMember   TeamMember? @relation("DealTeamMember", fields: [teamMemberId], references: [id], onDelete: SetNull)
 
   contacts DealContact[]
   tasks    Task[]

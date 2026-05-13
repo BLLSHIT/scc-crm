@@ -11,6 +11,7 @@ export const dealSchema = z.object({
   pipelineId: z.string().min(1, 'Pipeline erforderlich'),
   companyId: z.string().optional(),
   ownerId: z.string().optional(),
+  teamMemberId: z.string().optional(),
 })
 
 export type DealInput = z.infer<typeof dealSchema>

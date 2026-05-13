@@ -22,6 +22,12 @@ interface ContactOption {
   position?: string | null
   companyId?: string | null
 }
+interface TeamMemberOption {
+  id: string
+  firstName: string
+  lastName: string
+  position?: string | null
+}
 
 interface DealFormProps {
   defaultValues?: Partial<DealInput>
@@ -32,6 +38,7 @@ interface DealFormProps {
   stages: Stage[]
   companies?: CompanyOption[]
   contacts?: ContactOption[]
+  teamMembers?: TeamMemberOption[]
 }
 
 export function DealForm({
@@ -43,6 +50,7 @@ export function DealForm({
   stages,
   companies = [],
   contacts = [],
+  teamMembers = [],
 }: DealFormProps) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
@@ -205,6 +213,30 @@ export function DealForm({
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="teamMemberId">Ansprechpartner SCC</Label>
+            <select
+              id="teamMemberId"
+              {...register('teamMemberId')}
+              className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
+            >
+              <option value="">— kein Ansprechpartner —</option>
+              {teamMembers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.firstName} {t.lastName}{t.position ? ` — ${t.position}` : ''}
+                </option>
+              ))}
+            </select>
+            {teamMembers.length === 0 && (
+              <p className="text-xs text-slate-500">
+                Noch keine Team-Mitglieder.{' '}
+                <a href="/teams/new" className="text-blue-600 hover:underline">
+                  Jetzt anlegen
+                </a>
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
