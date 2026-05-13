@@ -46,20 +46,17 @@ export async function getContactById(id: string) {
   const { data, error } = await supabase
     .from('contacts')
     .select(
-      `*,
+      `id, firstName, lastName, email, phone, position, source, notes, tags, createdAt, updatedAt,
        company:companies(id, name),
-       owner:profiles(id, firstName, lastName),
-       deals:deal_contacts(
-         role,
-         deal:deals(
-           id, title, value, currency,
-           stage:pipeline_stages(id, name, color)
-         )
-       )`
+       owner:profiles(id, firstName, lastName)`
     )
     .eq('id', id)
     .single()
 
-  if (error) throw new Error(error.message)
-  return data
+  if (error) {
+    console.error('[getContactById] error:', JSON.stringify(error))
+    throw new Error(error.message)
+  }
+  // Return with empty deals array — deal join disabled for debugging
+  return { ...data, deals: [] }
 }
