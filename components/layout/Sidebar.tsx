@@ -18,6 +18,7 @@ import {
   Briefcase,
   Megaphone,
   Database,
+  HardHat,
   Settings,
   ShieldCheck,
   ChevronDown,
@@ -60,10 +61,11 @@ const sections: NavSection[] = [
     icon: Database,
     label: 'Stammdaten',
     items: [
-      { label: 'Produkte',     href: '/products',     icon: Package },
-      { label: 'Kategorien',   href: '/categories',   icon: Tags },
-      { label: 'Branchen',     href: '/industries',   icon: Briefcase },
-      { label: 'Lead-Quellen', href: '/lead-sources', icon: Megaphone },
+      { label: 'Produkte',      href: '/products',     icon: Package },
+      { label: 'Branchen',      href: '/industries',   icon: Briefcase },
+      { label: 'Lead-Quellen',  href: '/lead-sources', icon: Megaphone },
+      { label: 'Textbausteine', href: '/text-modules', icon: AlignLeft },
+      { label: 'Bautrupp',      href: '/build-teams',  icon: HardHat },
     ],
   },
   {
@@ -73,7 +75,6 @@ const sections: NavSection[] = [
     items: [
       { label: 'Allgemein',     href: '/settings',     icon: Settings },
       { label: 'Team & Rollen', href: '/teams',        icon: UserCog },
-      { label: 'Textbausteine', href: '/text-modules', icon: AlignLeft },
     ],
   },
 ]
@@ -211,6 +212,9 @@ export function Sidebar({ profile }: SidebarProps) {
             </p>
           </div>
         </div>
+        <p className="text-[10px] text-[#3eb886]/70 px-3 pt-3 mt-2 border-t border-[#024d39] tracking-wider">
+          v0.2 · SCC – JHJ
+        </p>
       </div>
     </aside>
   )
