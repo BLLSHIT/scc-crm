@@ -15,8 +15,8 @@ export async function getQuotes(filters: QuoteFilters = {}) {
     .from('quotes')
     .select(
       `id, quoteNumber, title, status, validUntil, totalGross, createdAt,
-       company:companies(id, name),
-       contact:contacts(id, firstName, lastName)`
+       company:companies(id, name, email),
+       contact:contacts(id, firstName, lastName, email)`
     )
     .order('createdAt', { ascending: false })
 

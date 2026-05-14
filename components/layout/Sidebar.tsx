@@ -52,7 +52,7 @@ export function Sidebar({ profile }: SidebarProps) {
   }
 
   return (
-    <aside className="flex flex-col w-64 min-h-screen bg-slate-900 text-slate-100 flex-shrink-0">
+    <aside className="flex flex-col w-64 min-h-screen bg-slate-900 text-slate-100 flex-shrink-0 print:hidden">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
         <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">

@@ -9,13 +9,14 @@ import { buttonVariants } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
+import { QuoteRowActions } from '@/components/quotes/QuoteRowActions'
 import type { Profile } from '@/types/app.types'
 
 const STATUS_FILTERS: { label: string; value?: QuoteStatus }[] = [
   { label: 'Alle' },
   { label: 'Entwurf', value: 'draft' },
   { label: 'Versendet', value: 'sent' },
-  { label: 'Angenommen', value: 'accepted' },
+  { label: 'Akzeptiert', value: 'accepted' },
   { label: 'Abgelehnt', value: 'declined' },
   { label: 'Abgelaufen', value: 'expired' },
 ]
@@ -31,7 +32,7 @@ const STATUS_BADGE: Record<QuoteStatus, string> = {
 const STATUS_LABEL: Record<QuoteStatus, string> = {
   draft: 'Entwurf',
   sent: 'Versendet',
-  accepted: 'Angenommen',
+  accepted: 'Akzeptiert',
   declined: 'Abgelehnt',
   expired: 'Abgelaufen',
 }
@@ -98,18 +99,19 @@ export default async function QuotesPage({
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Nummer</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Titel</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Kunde</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-600">Angebotsnr.</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-600">Unternehmen</th>
                   <th className="text-left px-4 py-3 font-medium text-slate-600">Status</th>
-                  <th className="text-right px-4 py-3 font-medium text-slate-600">Summe</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-600">Datum</th>
                   <th className="text-left px-4 py-3 font-medium text-slate-600">Gültig bis</th>
+                  <th className="text-right px-4 py-3 font-medium text-slate-600">Betrag</th>
+                  <th className="text-right px-4 py-3 font-medium text-slate-600 w-44">Aktionen</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {quotes.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                    <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
                       Keine Angebote gefunden.{' '}
                       <Link href="/quotes/new" className="text-blue-600 hover:underline">
                         Erstes Angebot anlegen
@@ -127,26 +129,31 @@ export default async function QuotesPage({
                         {q.quoteNumber}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/quotes/${q.id}`}
-                        className="font-medium text-slate-900 hover:text-blue-600"
-                      >
-                        {q.title}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {q.company?.name ?? (q.contact ? `${q.contact.firstName} ${q.contact.lastName}` : '—')}
+                    <td className="px-4 py-3 text-slate-700">
+                      {q.company?.name ?? (
+                        q.contact ? `${q.contact.firstName} ${q.contact.lastName}` : '—'
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_BADGE[q.status as QuoteStatus]}`}>
                         {STATUS_LABEL[q.status as QuoteStatus]}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-slate-500">{formatDate(q.createdAt)}</td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {q.validUntil ? formatDate(q.validUntil) : '—'}
+                    </td>
                     <td className="px-4 py-3 text-right font-medium">
                       {formatCurrency(Number(q.totalGross ?? 0), 'EUR')}
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{formatDate(q.validUntil)}</td>
+                    <td className="px-4 py-3">
+                      <QuoteRowActions
+                        quoteId={q.id}
+                        quoteNumber={q.quoteNumber}
+                        currentStatus={q.status as QuoteStatus}
+                        recipientEmail={q.contact?.email ?? q.company?.email ?? null}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
