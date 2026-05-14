@@ -3,7 +3,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyById } from '@/lib/db/companies'
+import { getActivityLogs } from '@/lib/db/activity-logs'
 import { deleteCompany } from '@/lib/actions/companies.actions'
+import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
 import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,8 +39,10 @@ export default async function CompanyDetailPage({
   }
 
   let company: any
+  let activities: any[] = []
   try {
     company = await getCompanyById(id)
+    activities = await getActivityLogs('company', id, 30)
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="getCompanyById" err={err} />
@@ -258,6 +262,8 @@ export default async function CompanyDetailPage({
                 </div>
               </CardContent>
             </Card>
+
+            <ActivityTimeline items={activities} />
           </div>
         </main>
       </div>

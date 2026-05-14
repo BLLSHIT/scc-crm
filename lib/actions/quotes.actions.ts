@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { quoteSchema, type QuoteInput } from '@/lib/validations/quote.schema'
 import { calcQuoteTotals } from '@/lib/utils/line-items'
 import { getNextDocumentNumber } from '@/lib/db/settings'
+import { logActivity } from '@/lib/db/activity-logs'
 import type { QuoteStatus } from '@/lib/db/quotes'
 
 export type ActionResult = {
@@ -90,6 +91,13 @@ export async function createQuote(input: QuoteInput): Promise<ActionResult> {
     }
   }
 
+  await logActivity({
+    entityType: 'quote',
+    entityId: id,
+    action: 'created',
+    summary: `Angebot ${quoteNumber} „${parsed.data.title}" angelegt`,
+  })
+
   revalidatePath('/quotes')
   return { redirectTo: `/quotes/${id}` }
 }
@@ -121,6 +129,13 @@ export async function updateQuote(id: string, input: QuoteInput): Promise<Action
   if (liErr) {
     return { error: { _form: [`Positionen-Fehler: ${liErr}`] } }
   }
+
+  await logActivity({
+    entityType: 'quote',
+    entityId: id,
+    action: 'updated',
+    summary: `Angebot „${parsed.data.title}" geändert`,
+  })
 
   revalidatePath('/quotes')
   revalidatePath(`/quotes/${id}`)
@@ -154,6 +169,13 @@ export async function updateQuoteStatus(id: string, newStatus: QuoteStatus): Pro
     console.error('[updateQuoteStatus] error:', error)
     return { error: { _form: [error.message] } }
   }
+  await logActivity({
+    entityType: 'quote',
+    entityId: id,
+    action: 'status_changed',
+    summary: `Status geändert: ${newStatus}`,
+    metadata: { status: newStatus },
+  })
   revalidatePath('/quotes')
   revalidatePath(`/quotes/${id}`)
   return {}

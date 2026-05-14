@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { companySchema, type CompanyInput } from '@/lib/validations/company.schema'
+import { logActivity } from '@/lib/db/activity-logs'
 
 export type ActionResult = {
   error?: Record<string, string[]>
@@ -37,6 +38,13 @@ export async function createCompany(input: CompanyInput): Promise<ActionResult> 
     return { error: { _form: [error.message] } }
   }
 
+  await logActivity({
+    entityType: 'company',
+    entityId: data.id,
+    action: 'created',
+    summary: `Firma „${parsed.data.name}" angelegt`,
+  })
+
   revalidatePath('/companies')
   return { redirectTo: `/companies/${data.id}` }
 }
@@ -67,6 +75,13 @@ export async function updateCompany(
     console.error('[updateCompany] Supabase error:', error)
     return { error: { _form: [error.message] } }
   }
+
+  await logActivity({
+    entityType: 'company',
+    entityId: id,
+    action: 'updated',
+    summary: `Firma „${parsed.data.name}" geändert`,
+  })
 
   revalidatePath('/companies')
   revalidatePath(`/companies/${id}`)

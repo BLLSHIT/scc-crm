@@ -3,7 +3,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getQuoteById, type QuoteStatus } from '@/lib/db/quotes'
+import { getActivityLogs } from '@/lib/db/activity-logs'
 import { deleteQuote } from '@/lib/actions/quotes.actions'
+import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
 import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,6 +41,7 @@ export default async function QuoteDetailPage({
   const { id } = await params
   let profile: Profile | null = null
   let quote: any
+  let activities: any[] = []
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -48,6 +51,7 @@ export default async function QuoteDetailPage({
       .from('profiles').select('*').eq('id', user.id).single()
     profile = (profileResult.data as Profile) ?? null
     quote = await getQuoteById(id)
+    activities = await getActivityLogs('quote', id, 30)
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Angebot laden" err={err} />
@@ -428,6 +432,8 @@ export default async function QuoteDetailPage({
                 </div>
               </CardContent>
             </Card>
+
+            <ActivityTimeline items={activities} />
           </div>
         </main>
       </div>

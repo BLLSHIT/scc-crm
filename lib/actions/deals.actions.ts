@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { dealSchema, type DealInput } from '@/lib/validations/deal.schema'
+import { logActivity } from '@/lib/db/activity-logs'
 
 export type ActionResult = { error?: Record<string, string[]>; redirectTo?: string }
 
@@ -66,6 +67,13 @@ export async function createDeal(
     }
   }
 
+  await logActivity({
+    entityType: 'deal',
+    entityId: data.id,
+    action: 'created',
+    summary: `Deal „${parsed.data.title}" angelegt`,
+  })
+
   revalidatePath('/deals')
   return { redirectTo: `/deals/${data.id}` }
 }
@@ -84,6 +92,13 @@ export async function moveDealStage(
     console.error('[moveDealStage] Supabase error:', error)
     return { error: { _form: [error.message] } }
   }
+  await logActivity({
+    entityType: 'deal',
+    entityId: dealId,
+    action: 'status_changed',
+    summary: 'Pipeline-Stage geändert',
+    metadata: { stageId },
+  })
   revalidatePath('/deals')
   return {}
 }
@@ -121,6 +136,13 @@ export async function updateDeal(
   if (syncErr) {
     return { error: { _form: [`Deal gespeichert, aber Verknüpfung der Ansprechpersonen fehlgeschlagen: ${syncErr}`] } }
   }
+
+  await logActivity({
+    entityType: 'deal',
+    entityId: id,
+    action: 'updated',
+    summary: `Deal „${parsed.data.title}" geändert`,
+  })
 
   revalidatePath('/deals')
   revalidatePath(`/deals/${id}`)

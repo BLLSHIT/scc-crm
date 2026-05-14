@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { contactSchema, type ContactInput } from '@/lib/validations/contact.schema'
+import { logActivity } from '@/lib/db/activity-logs'
 
 export type ActionResult = {
   error?: Record<string, string[]>
@@ -40,6 +41,13 @@ export async function createContact(input: ContactInput): Promise<ActionResult> 
     return { error: { _form: [error.message] } }
   }
 
+  await logActivity({
+    entityType: 'contact',
+    entityId: data.id,
+    action: 'created',
+    summary: `Kontakt „${parsed.data.firstName} ${parsed.data.lastName}" angelegt`,
+  })
+
   revalidatePath('/contacts')
   return { redirectTo: `/contacts/${data.id}` }
 }
@@ -73,6 +81,13 @@ export async function updateContact(
     console.error('[updateContact] Supabase error:', error)
     return { error: { _form: [error.message] } }
   }
+
+  await logActivity({
+    entityType: 'contact',
+    entityId: id,
+    action: 'updated',
+    summary: `Kontakt „${parsed.data.firstName} ${parsed.data.lastName}" geändert`,
+  })
 
   revalidatePath('/contacts')
   revalidatePath(`/contacts/${id}`)

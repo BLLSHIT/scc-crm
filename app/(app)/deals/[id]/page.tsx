@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getDealById } from '@/lib/db/deals'
 import { getQuotesByDealId } from '@/lib/db/quotes'
+import { getActivityLogs } from '@/lib/db/activity-logs'
 import { deleteDeal } from '@/lib/actions/deals.actions'
+import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
 import { Header } from '@/components/layout/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -64,9 +66,11 @@ export default async function DealDetailPage({
 
   let deal: any
   let dealQuotes: any[] = []
+  let activities: any[] = []
   try {
     deal = await getDealById(id)
     dealQuotes = await getQuotesByDealId(id)
+    activities = await getActivityLogs('deal', id, 30)
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="getDealById" err={err} />
@@ -192,6 +196,8 @@ export default async function DealDetailPage({
                 </CardContent>
               </Card>
             )}
+
+            <ActivityTimeline items={activities} />
           </div>
 
           <div className="space-y-6">

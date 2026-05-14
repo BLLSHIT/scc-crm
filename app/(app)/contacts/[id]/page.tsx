@@ -3,7 +3,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getContactById } from '@/lib/db/contacts'
+import { getActivityLogs } from '@/lib/db/activity-logs'
 import { deleteContact } from '@/lib/actions/contacts.actions'
+import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
 import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -75,8 +77,10 @@ export default async function ContactDetailPage({
 
   // Step 2: contact
   let contact: any
+  let activities: any[] = []
   try {
     contact = await getContactById(id)
+    activities = await getActivityLogs('contact', id, 30)
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="getContactById" err={err} />
@@ -293,6 +297,8 @@ export default async function ContactDetailPage({
                 </div>
               </CardContent>
             </Card>
+
+            <ActivityTimeline items={activities} />
           </div>
         </main>
       </div>
