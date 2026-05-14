@@ -120,6 +120,30 @@ model QuoteLineItem {
   @@map("quote_line_items")
 }
 
+model Industry {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("industries")
+}
+
+model LeadSource {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("lead_sources")
+}
+
 model ProductCategory {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -363,6 +387,8 @@ model Deal {
 
   teamMemberId String?
   teamMember   TeamMember? @relation("DealTeamMember", fields: [teamMemberId], references: [id], onDelete: SetNull)
+
+  projectStatus String?
 
   contacts DealContact[]
   tasks    Task[]

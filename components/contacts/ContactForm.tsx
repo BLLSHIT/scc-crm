@@ -10,18 +10,25 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ActionResult } from '@/lib/actions/contacts.actions'
-import { LEAD_SOURCE_OPTIONS } from '@/lib/constants/options'
 
 interface CompanyOption { id: string; name: string }
+interface LeadSourceOption { id: string; name: string }
 
 interface ContactFormProps {
   defaultValues?: Partial<ContactInput>
   onSubmit: (data: ContactInput) => Promise<ActionResult>
   title: string
   companies?: CompanyOption[]
+  leadSources?: LeadSourceOption[]
 }
 
-export function ContactForm({ defaultValues, onSubmit, title, companies = [] }: ContactFormProps) {
+export function ContactForm({
+  defaultValues,
+  onSubmit,
+  title,
+  companies = [],
+  leadSources = [],
+}: ContactFormProps) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -153,8 +160,8 @@ export function ContactForm({ defaultValues, onSubmit, title, companies = [] }: 
               className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
             >
               <option value="">— bitte wählen —</option>
-              {LEAD_SOURCE_OPTIONS.map((o) => (
-                <option key={o} value={o}>{o}</option>
+              {leadSources.map((o) => (
+                <option key={o.id} value={o.name}>{o.name}</option>
               ))}
             </select>
           </div>

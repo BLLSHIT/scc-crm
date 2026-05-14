@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getContactById } from '@/lib/db/contacts'
 import { getAllCompanyOptions } from '@/lib/db/companies'
+import { getActiveLeadSourceOptions } from '@/lib/db/lead-sources'
 import { updateContact } from '@/lib/actions/contacts.actions'
 import { Header } from '@/components/layout/Header'
 import { ContactForm } from '@/components/contacts/ContactForm'
@@ -78,7 +79,10 @@ export default async function EditContactPage({
     )
   }
 
-  const companies = await getAllCompanyOptions()
+  const [companies, leadSources] = await Promise.all([
+    getAllCompanyOptions(),
+    getActiveLeadSourceOptions(),
+  ])
 
   try {
     return (
@@ -88,6 +92,7 @@ export default async function EditContactPage({
           <ContactForm
             title="Kontakt bearbeiten"
             companies={companies}
+            leadSources={leadSources}
             defaultValues={{
               firstName: contact.firstName ?? '',
               lastName: contact.lastName ?? '',

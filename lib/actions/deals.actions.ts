@@ -46,6 +46,9 @@ export async function createDeal(
       companyId: parsed.data.companyId || null,
       ownerId: parsed.data.ownerId || null,
       teamMemberId: parsed.data.teamMemberId || null,
+      projectStatus: parsed.data.projectStatus && parsed.data.projectStatus !== 'none'
+        ? parsed.data.projectStatus
+        : null,
       updatedAt: now,
     })
     .select('id')
@@ -102,6 +105,9 @@ export async function updateDeal(
       companyId: parsed.data.companyId || null,
       ownerId: parsed.data.ownerId || null,
       teamMemberId: parsed.data.teamMemberId || null,
+      projectStatus: parsed.data.projectStatus && parsed.data.projectStatus !== 'none'
+        ? parsed.data.projectStatus
+        : null,
       updatedAt: new Date().toISOString(),
     })
     .eq('id', id)

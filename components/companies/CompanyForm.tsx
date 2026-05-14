@@ -9,15 +9,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ActionResult } from '@/lib/actions/companies.actions'
-import { INDUSTRY_OPTIONS } from '@/lib/constants/options'
+
+interface IndustryOption { id: string; name: string }
 
 interface CompanyFormProps {
   defaultValues?: Partial<CompanyInput>
   onSubmit: (data: CompanyInput) => Promise<ActionResult>
   title: string
+  industries?: IndustryOption[]
 }
 
-export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps) {
+export function CompanyForm({ defaultValues, onSubmit, title, industries = [] }: CompanyFormProps) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -88,8 +90,8 @@ export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps
                 className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
               >
                 <option value="">— bitte wählen —</option>
-                {INDUSTRY_OPTIONS.map((o) => (
-                  <option key={o} value={o}>{o}</option>
+                {industries.map((o) => (
+                  <option key={o.id} value={o.name}>{o.name}</option>
                 ))}
               </select>
             </div>

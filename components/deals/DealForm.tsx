@@ -216,6 +216,24 @@ export function DealForm({
           </div>
 
           <div className="space-y-1.5">
+            <Label htmlFor="projectStatus">Projektstatus (nach Abschluss)</Label>
+            <select
+              id="projectStatus"
+              {...register('projectStatus')}
+              className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
+            >
+              <option value="none">— kein / Vertrieb läuft —</option>
+              <option value="planning">Planung</option>
+              <option value="in_progress">In Umsetzung</option>
+              <option value="installed">Installiert</option>
+              <option value="completed">Abgeschlossen</option>
+              <option value="paid">Bezahlt</option>
+              <option value="on_hold">Pausiert</option>
+              <option value="cancelled">Storniert</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="teamMemberId">Ansprechpartner SCC</Label>
             <select
               id="teamMemberId"

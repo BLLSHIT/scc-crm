@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/Header'
 import { CompanyForm } from '@/components/companies/CompanyForm'
 import { createCompany } from '@/lib/actions/companies.actions'
+import { getActiveIndustryOptions } from '@/lib/db/industries'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
 
@@ -25,11 +26,13 @@ export default async function NewCompanyPage() {
     return <ErrorView where="Auth/Profile" err={err} />
   }
 
+  const industries = await getActiveIndustryOptions()
+
   return (
     <div className="flex-1 overflow-auto">
       <Header title="Neue Firma" profile={profile} />
       <main className="p-6">
-        <CompanyForm title="Firma erstellen" onSubmit={createCompany} />
+        <CompanyForm title="Firma erstellen" onSubmit={createCompany} industries={industries} />
       </main>
     </div>
   )

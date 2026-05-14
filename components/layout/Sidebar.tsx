@@ -14,6 +14,8 @@ import {
   Tags,
   AlignLeft,
   UserCog,
+  Briefcase,
+  Megaphone,
   Settings,
   LogOut,
 } from 'lucide-react'
@@ -32,6 +34,8 @@ const navItems = [
   { label: 'Aufgaben',      href: '/tasks',         icon: CheckSquare },
   { label: 'Produkte',      href: '/products',      icon: Package },
   { label: 'Kategorien',    href: '/categories',    icon: Tags },
+  { label: 'Branchen',      href: '/industries',    icon: Briefcase },
+  { label: 'Lead-Quellen',  href: '/lead-sources',  icon: Megaphone },
   { label: 'Textbausteine', href: '/text-modules',  icon: AlignLeft },
   { label: 'Team',          href: '/teams',         icon: UserCog },
 ]

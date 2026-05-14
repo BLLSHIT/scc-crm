@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header'
 import { ContactForm } from '@/components/contacts/ContactForm'
 import { createContact } from '@/lib/actions/contacts.actions'
 import { getAllCompanyOptions } from '@/lib/db/companies'
+import { getActiveLeadSourceOptions } from '@/lib/db/lead-sources'
 import type { Profile } from '@/types/app.types'
 
 export default async function NewContactPage() {
@@ -12,7 +13,10 @@ export default async function NewContactPage() {
   if (!user) redirect('/login')
   const { data: profile } = await supabase
     .from('profiles').select('*').eq('id', user.id).single()
-  const companies = await getAllCompanyOptions()
+  const [companies, leadSources] = await Promise.all([
+    getAllCompanyOptions(),
+    getActiveLeadSourceOptions(),
+  ])
 
   return (
     <div className="flex-1 overflow-auto">
@@ -22,6 +26,7 @@ export default async function NewContactPage() {
           title="Kontakt erstellen"
           onSubmit={createContact}
           companies={companies}
+          leadSources={leadSources}
         />
       </main>
     </div>

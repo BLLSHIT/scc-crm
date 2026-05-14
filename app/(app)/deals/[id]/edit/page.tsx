@@ -94,6 +94,7 @@ export default async function EditDealPage({
               companyId: deal.companyId ?? '',
               ownerId: deal.ownerId ?? '',
               teamMemberId: deal.teamMemberId ?? '',
+              projectStatus: deal.projectStatus ?? 'none',
             }}
             onSubmit={updateDeal.bind(null, id)}
           />

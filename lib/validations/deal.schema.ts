@@ -12,6 +12,16 @@ export const dealSchema = z.object({
   companyId: z.string().optional(),
   ownerId: z.string().optional(),
   teamMemberId: z.string().optional(),
+  projectStatus: z.enum([
+    'none',
+    'planning',
+    'in_progress',
+    'installed',
+    'completed',
+    'paid',
+    'on_hold',
+    'cancelled',
+  ]).optional(),
 })
 
 export type DealInput = z.infer<typeof dealSchema>

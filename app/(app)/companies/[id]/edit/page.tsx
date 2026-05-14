@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyById } from '@/lib/db/companies'
+import { getActiveIndustryOptions } from '@/lib/db/industries'
 import { updateCompany } from '@/lib/actions/companies.actions'
 import { Header } from '@/components/layout/Header'
 import { CompanyForm } from '@/components/companies/CompanyForm'
@@ -55,6 +56,7 @@ export default async function EditCompanyPage({
       <main className="p-6">
         <CompanyForm
           title="Firma bearbeiten"
+          industries={await getActiveIndustryOptions()}
           defaultValues={{
             name: company.name ?? '',
             website: company.website ?? '',

@@ -58,7 +58,7 @@ export async function getDealById(id: string) {
     .from('deals')
     .select(
       `id, title, value, currency, probability, expectedCloseAt, description, lostReason,
-       pipelineId, stageId, companyId, ownerId, teamMemberId, createdAt, updatedAt,
+       pipelineId, stageId, companyId, ownerId, teamMemberId, projectStatus, createdAt, updatedAt,
        company:companies(id, name),
        owner:profiles(id, firstName, lastName),
        teamMember:team_members(id, firstName, lastName, email, mobile, position),
