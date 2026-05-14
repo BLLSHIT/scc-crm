@@ -43,6 +43,18 @@ model Settings {
   @@map("settings")
 }
 
+model ProductCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_categories")
+}
+
 model Product {
   id              String  @id @default(cuid())
   name            String
@@ -50,8 +62,9 @@ model Product {
   sku             String?
   category        String?
   unit            String  @default("Stück")
-  defaultPriceNet Decimal @default(0) @db.Decimal(12, 2)
-  defaultVatRate  Decimal @default(19) @db.Decimal(5, 2)
+  defaultPriceNet  Decimal @default(0) @db.Decimal(12, 2)
+  purchasePriceNet Decimal @default(0) @db.Decimal(12, 2)
+  defaultVatRate   Decimal @default(19) @db.Decimal(5, 2)
   imageUrl        String?
   isActive        Boolean @default(true)
 

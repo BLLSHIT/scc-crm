@@ -7,6 +7,7 @@ export const productSchema = z.object({
   category: z.string().optional(),
   unit: z.string().default('Stück'),
   defaultPriceNet: z.coerce.number().min(0).default(0),
+  purchasePriceNet: z.coerce.number().min(0).default(0),
   defaultVatRate: z.coerce.number().refine((v) => v === 19 || v === 7 || v === 0, {
     message: 'MwSt-Satz: 0, 7 oder 19',
   }).default(19),

@@ -2,24 +2,22 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/Header'
-import { ProductForm } from '@/components/products/ProductForm'
-import { getProductById } from '@/lib/db/products'
-import { getActiveCategoryOptions } from '@/lib/db/categories'
-import { updateProduct, deleteProduct } from '@/lib/actions/products.actions'
+import { CategoryForm } from '@/components/categories/CategoryForm'
+import { getCategoryById } from '@/lib/db/categories'
+import { updateCategory, deleteCategory } from '@/lib/actions/categories.actions'
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
 
-export default async function EditProductPage({
+export default async function EditCategoryPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
   let profile: Profile | null = null
-  let product: any
-  let categories: { id: string; name: string }[] = []
+  let cat: any
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -28,17 +26,18 @@ export default async function EditProductPage({
     const profileResult = await supabase
       .from('profiles').select('*').eq('id', user.id).single()
     profile = (profileResult.data as Profile) ?? null
-    product = await getProductById(id)
-    categories = await getActiveCategoryOptions()
+    cat = await getCategoryById(id)
   } catch (err) {
     if (isFrameworkError(err)) throw err
-    return <ErrorView where="Produkt laden" err={err} />
+    return <ErrorView where="Kategorie laden" err={err} />
   }
 
-  if (!product) {
+  if (!cat) {
     return (
       <div className="flex-1 p-6">
-        <div className="rounded-xl border border-slate-200 bg-white p-6">Produkt nicht gefunden.</div>
+        <div className="rounded-xl border border-slate-200 bg-white p-6">
+          Kategorie nicht gefunden.
+        </div>
       </div>
     )
   }
@@ -46,14 +45,14 @@ export default async function EditProductPage({
   return (
     <div className="flex-1 overflow-auto">
       <Header
-        title="Produkt bearbeiten"
+        title="Kategorie bearbeiten"
         profile={profile}
         actions={
           <form
             action={async () => {
               'use server'
-              await deleteProduct(id)
-              redirect('/products')
+              await deleteCategory(id)
+              redirect('/categories')
             }}
           >
             <Button size="sm" variant="destructive" type="submit">
@@ -64,22 +63,14 @@ export default async function EditProductPage({
         }
       />
       <main className="p-6">
-        <ProductForm
-          title="Produkt bearbeiten"
+        <CategoryForm
+          title="Kategorie bearbeiten"
           defaultValues={{
-            name: product.name ?? '',
-            description: product.description ?? '',
-            sku: product.sku ?? '',
-            category: product.category ?? '',
-            unit: product.unit ?? 'Stück',
-            defaultPriceNet: Number(product.defaultPriceNet ?? 0),
-            purchasePriceNet: Number(product.purchasePriceNet ?? 0),
-            defaultVatRate: Number(product.defaultVatRate ?? 19) as 0 | 7 | 19,
-            imageUrl: product.imageUrl ?? '',
-            isActive: product.isActive ?? true,
+            name: cat.name ?? '',
+            sortOrder: cat.sortOrder ?? 0,
+            isActive: cat.isActive ?? true,
           }}
-          onSubmit={updateProduct.bind(null, id)}
-          categories={categories}
+          onSubmit={updateCategory.bind(null, id)}
         />
       </main>
     </div>

@@ -18,6 +18,7 @@ function clean(input: ProductInput) {
     category: input.category?.trim() || null,
     unit: input.unit?.trim() || 'Stück',
     defaultPriceNet: input.defaultPriceNet,
+    purchasePriceNet: input.purchasePriceNet,
     defaultVatRate: input.defaultVatRate,
     imageUrl: input.imageUrl?.trim() || null,
     isActive: input.isActive,

@@ -9,15 +9,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Lock } from 'lucide-react'
 import type { ActionResult } from '@/lib/actions/products.actions'
+
+interface CategoryOption { id: string; name: string }
 
 interface Props {
   defaultValues?: Partial<ProductInput>
   onSubmit: (data: ProductInput) => Promise<ActionResult>
   title: string
+  categories?: CategoryOption[]
 }
 
-export function ProductForm({ defaultValues, onSubmit, title }: Props) {
+export function ProductForm({ defaultValues, onSubmit, title, categories = [] }: Props) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -29,12 +33,17 @@ export function ProductForm({ defaultValues, onSubmit, title }: Props) {
       unit: 'Stück',
       defaultVatRate: 19,
       defaultPriceNet: 0,
+      purchasePriceNet: 0,
       isActive: true,
       ...defaultValues,
     },
   })
 
   const imageUrl = watch('imageUrl')
+  const priceNet = Number(watch('defaultPriceNet') ?? 0)
+  const purchaseNet = Number(watch('purchasePriceNet') ?? 0)
+  const marginAbs = priceNet - purchaseNet
+  const marginPct = priceNet > 0 ? (marginAbs / priceNet) * 100 : 0
 
   async function submit(data: ProductInput) {
     setServerError(null)
@@ -87,7 +96,16 @@ export function ProductForm({ defaultValues, onSubmit, title }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="category">Kategorie</Label>
-              <Input id="category" {...register('category')} placeholder="z.B. Court, Zubehör" />
+              <select
+                id="category"
+                {...register('category')}
+                className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
+              >
+                <option value="">— keine Kategorie —</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -108,7 +126,7 @@ export function ProductForm({ defaultValues, onSubmit, title }: Props) {
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="defaultPriceNet">Nettopreis (€) *</Label>
+              <Label htmlFor="defaultPriceNet">Verkaufspreis netto *</Label>
               <Input
                 id="defaultPriceNet"
                 type="number"
@@ -128,6 +146,39 @@ export function ProductForm({ defaultValues, onSubmit, title }: Props) {
                 <option value="7">7% (ermäßigt)</option>
                 <option value="0">0% (steuerfrei)</option>
               </select>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-amber-200 bg-amber-50/60 p-3 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-amber-900">
+              <Lock className="w-3 h-3" />
+              Intern · erscheint NICHT auf Angebot oder Rechnung
+            </div>
+            <div className="grid grid-cols-3 gap-3 items-end">
+              <div className="space-y-1.5">
+                <Label htmlFor="purchasePriceNet">EK-Preis netto (€)</Label>
+                <Input
+                  id="purchasePriceNet"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register('purchasePriceNet')}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Marge absolut</Label>
+                <div className="px-3 py-2 text-sm bg-white border rounded-md font-medium text-slate-800">
+                  {marginAbs.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Marge %</Label>
+                <div className={`px-3 py-2 text-sm bg-white border rounded-md font-medium ${
+                  marginPct >= 30 ? 'text-emerald-700' : marginPct >= 10 ? 'text-amber-700' : 'text-red-700'
+                }`}>
+                  {marginPct.toFixed(1)} %
+                </div>
+              </div>
             </div>
           </div>
 

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ActionResult } from '@/lib/actions/companies.actions'
+import { INDUSTRY_OPTIONS } from '@/lib/constants/options'
 
 interface CompanyFormProps {
   defaultValues?: Partial<CompanyInput>
@@ -81,7 +82,16 @@ export function CompanyForm({ defaultValues, onSubmit, title }: CompanyFormProps
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="industry">Branche</Label>
-              <Input id="industry" {...register('industry')} placeholder="z.B. Sport, Hotellerie" />
+              <select
+                id="industry"
+                {...register('industry')}
+                className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
+              >
+                <option value="">— bitte wählen —</option>
+                {INDUSTRY_OPTIONS.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="size">Größe</Label>

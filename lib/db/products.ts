@@ -1,12 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 
-export async function getProducts(activeOnly = false) {
+export interface ProductFilters {
+  q?: string
+  category?: string
+  activeOnly?: boolean
+}
+
+export async function getProducts(filters: ProductFilters = {}) {
   const supabase = await createClient()
   let query = supabase
     .from('products')
     .select('*')
     .order('name', { ascending: true })
-  if (activeOnly) query = query.eq('isActive', true)
+  if (filters.activeOnly) query = query.eq('isActive', true)
+  if (filters.category) query = query.eq('category', filters.category)
+  if (filters.q) {
+    query = query.or(`name.ilike.%${filters.q}%,sku.ilike.%${filters.q}%,description.ilike.%${filters.q}%`)
+  }
   const { data, error } = await query
   if (error) {
     console.error('[getProducts] error:', error)

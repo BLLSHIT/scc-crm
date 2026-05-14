@@ -151,7 +151,7 @@ export default async function DealDetailPage({
 
             {Array.isArray(deal.contacts) && deal.contacts.length > 0 && (
               <Card>
-                <CardHeader><CardTitle>Stakeholder</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Ansprechpartner</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                   {deal.contacts.map((dc: any) => (
                     <Link

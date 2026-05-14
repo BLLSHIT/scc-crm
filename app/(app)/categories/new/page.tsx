@@ -1,15 +1,13 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/layout/Header'
-import { ProductForm } from '@/components/products/ProductForm'
-import { createProduct } from '@/lib/actions/products.actions'
-import { getActiveCategoryOptions } from '@/lib/db/categories'
+import { CategoryForm } from '@/components/categories/CategoryForm'
+import { createCategory } from '@/lib/actions/categories.actions'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
 
-export default async function NewProductPage() {
+export default async function NewCategoryPage() {
   let profile: Profile | null = null
-  let categories: { id: string; name: string }[] = []
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -18,17 +16,16 @@ export default async function NewProductPage() {
     const profileResult = await supabase
       .from('profiles').select('*').eq('id', user.id).single()
     profile = (profileResult.data as Profile) ?? null
-    categories = await getActiveCategoryOptions()
   } catch (err) {
     if (isFrameworkError(err)) throw err
-    return <ErrorView where="Auth/Kategorien" err={err} />
+    return <ErrorView where="Auth" err={err} />
   }
 
   return (
     <div className="flex-1 overflow-auto">
-      <Header title="Neues Produkt" profile={profile} />
+      <Header title="Neue Kategorie" profile={profile} />
       <main className="p-6">
-        <ProductForm title="Produkt anlegen" onSubmit={createProduct} categories={categories} />
+        <CategoryForm title="Kategorie anlegen" onSubmit={createCategory} />
       </main>
     </div>
   )

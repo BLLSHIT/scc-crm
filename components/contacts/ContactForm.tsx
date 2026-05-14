@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ActionResult } from '@/lib/actions/contacts.actions'
+import { LEAD_SOURCE_OPTIONS } from '@/lib/constants/options'
 
 interface CompanyOption { id: string; name: string }
 
@@ -145,12 +146,17 @@ export function ContactForm({ defaultValues, onSubmit, title, companies = [] }: 
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="source">Quelle</Label>
-            <Input
+            <Label htmlFor="source">Lead-Quelle</Label>
+            <select
               id="source"
               {...register('source')}
-              placeholder="z.B. Messe, Website, Empfehlung"
-            />
+              className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
+            >
+              <option value="">— bitte wählen —</option>
+              {LEAD_SOURCE_OPTIONS.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">

@@ -11,6 +11,7 @@ import {
   Receipt,
   CheckSquare,
   Package,
+  Tags,
   AlignLeft,
   UserCog,
   Settings,
@@ -30,6 +31,7 @@ const navItems = [
   { label: 'Rechnungen',    href: '/invoices',      icon: Receipt },
   { label: 'Aufgaben',      href: '/tasks',         icon: CheckSquare },
   { label: 'Produkte',      href: '/products',      icon: Package },
+  { label: 'Kategorien',    href: '/categories',    icon: Tags },
   { label: 'Textbausteine', href: '/text-modules',  icon: AlignLeft },
   { label: 'Team',          href: '/teams',         icon: UserCog },
 ]
