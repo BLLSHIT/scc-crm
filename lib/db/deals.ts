@@ -38,6 +38,20 @@ export async function getDealsForPipeline(pipelineId: string) {
   return { stages: stages ?? [], deals: deals ?? [] }
 }
 
+export async function getActiveDealOptions() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('deals')
+    .select('id, title, company:companies(id, name)')
+    .order('createdAt', { ascending: false })
+    .limit(200)
+  if (error) {
+    console.error('[getActiveDealOptions] error:', error)
+    return []
+  }
+  return data ?? []
+}
+
 export async function getDealById(id: string) {
   const supabase = await createClient()
   const { data, error } = await supabase

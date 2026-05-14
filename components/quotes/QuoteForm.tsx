@@ -50,6 +50,11 @@ interface ProductOption {
   defaultVatRate: number | string
   imageUrl?: string | null
 }
+interface DealOption {
+  id: string
+  title: string
+  company?: { id: string; name: string } | null
+}
 interface TextModuleOption {
   id: string
   name: string
@@ -67,6 +72,7 @@ interface Props {
   teamMembers: TeamMemberOption[]
   products: ProductOption[]
   textModules: TextModuleOption[]
+  deals?: DealOption[]
 }
 
 export function QuoteForm({
@@ -78,6 +84,7 @@ export function QuoteForm({
   teamMembers,
   products,
   textModules,
+  deals = [],
 }: Props) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
@@ -295,7 +302,22 @@ export function QuoteForm({
               </select>
             </div>
           </div>
-          <input type="hidden" {...register('dealId')} />
+
+          <div className="space-y-1.5">
+            <Label htmlFor="dealId">Verknüpfter Deal (optional)</Label>
+            <select
+              id="dealId"
+              {...register('dealId')}
+              className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
+            >
+              <option value="">— kein Deal verknüpft —</option>
+              {deals.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title}{d.company ? ` — ${d.company.name}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
         </CardContent>
       </Card>
 
@@ -602,7 +624,7 @@ function LineItemRow({
           <input type="hidden" {...register(`lineItems.${index}.itemType`)} />
           <input type="hidden" {...register(`lineItems.${index}.productId`)} />
           <input type="hidden" {...register(`lineItems.${index}.imageUrl`)} />
-          <input type="hidden" {...register(`lineItems.${index}.sortOrder`)} value={index} />
+          <input type="hidden" {...register(`lineItems.${index}.sortOrder`)} />
 
           {isText ? (
             <>
@@ -618,10 +640,22 @@ function LineItemRow({
             </>
           ) : (
             <>
-              <Input
-                placeholder="Bezeichnung *"
-                {...register(`lineItems.${index}.name`)}
-              />
+              <div className="flex items-start gap-3">
+                {item.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name || 'Produkt'}
+                    className="w-12 h-12 object-cover rounded border bg-slate-50 flex-shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder="Bezeichnung *"
+                    {...register(`lineItems.${index}.name`)}
+                  />
+                </div>
+              </div>
               <Textarea
                 placeholder="Beschreibung (optional)"
                 rows={2}

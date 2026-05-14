@@ -158,6 +158,7 @@ export default async function QuoteDetailPage({
                     <thead className="bg-slate-50 border-y text-xs text-slate-500 uppercase tracking-wide">
                       <tr>
                         <th className="text-left px-4 py-2 w-10">#</th>
+                        <th className="text-left px-4 py-2 w-16">Bild</th>
                         <th className="text-left px-4 py-2">Bezeichnung</th>
                         <th className="text-right px-4 py-2 w-24">Menge</th>
                         <th className="text-right px-4 py-2 w-28">Einzel netto</th>
@@ -168,6 +169,17 @@ export default async function QuoteDetailPage({
                     </thead>
                     <tbody className="divide-y">
                       {items.map((it, idx) => {
+                        // Freitextzeile in voller Breite
+                        if (it.itemType === 'text') {
+                          return (
+                            <tr key={it.id} className="bg-slate-50/60">
+                              <td className="px-4 py-3 align-top text-slate-400">{idx + 1}</td>
+                              <td colSpan={7} className="px-4 py-3 whitespace-pre-wrap italic text-slate-700">
+                                {it.name}
+                              </td>
+                            </tr>
+                          )
+                        }
                         const calc = calcLine({
                           quantity: it.quantity,
                           unitPriceNet: it.unitPriceNet,
@@ -178,6 +190,18 @@ export default async function QuoteDetailPage({
                         return (
                           <tr key={it.id} className={it.isOptional ? 'bg-amber-50/40' : ''}>
                             <td className="px-4 py-3 align-top text-slate-400">{idx + 1}</td>
+                            <td className="px-4 py-3 align-top">
+                              {it.imageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={it.imageUrl}
+                                  alt={it.name}
+                                  className="w-12 h-12 object-cover rounded border bg-slate-50"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded border bg-slate-50" />
+                              )}
+                            </td>
                             <td className="px-4 py-3 align-top">
                               <p className="font-medium text-slate-900">
                                 {it.name}

@@ -32,13 +32,15 @@ export function QuoteRowActions({
 }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [direction, setDirection] = useState<'down' | 'up'>('down')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const [, startTransition] = useTransition()
 
   useEffect(() => {
     if (!open) return
     function onClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false)
       }
     }
@@ -52,6 +54,15 @@ export function QuoteRowActions({
       document.removeEventListener('keydown', onKey)
     }
   }, [open])
+
+  function toggle() {
+    if (!open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      setDirection(spaceBelow < 260 ? 'up' : 'down')
+    }
+    setOpen((v) => !v)
+  }
 
   function changeStatus(next: QuoteStatus) {
     setOpen(false)
@@ -70,13 +81,31 @@ export function QuoteRowActions({
     })
   }
 
+  function openPreviewPopup(e: React.MouseEvent) {
+    e.preventDefault()
+    window.open(
+      `/quotes/${quoteId}/preview`,
+      `quote-${quoteId}`,
+      'width=960,height=1100,scrollbars=yes'
+    )
+  }
+
+  function openPrintDialog(e: React.MouseEvent) {
+    e.preventDefault()
+    window.open(
+      `/quotes/${quoteId}/preview?print=1`,
+      `quote-${quoteId}-print`,
+      'width=960,height=1100,scrollbars=yes'
+    )
+  }
+
   const mailto =
     recipientEmail
       ? `mailto:${recipientEmail}?subject=${encodeURIComponent('Angebot ' + quoteNumber)}&body=${encodeURIComponent('Sehr geehrte Damen und Herren,\n\nanbei finden Sie unser Angebot ' + quoteNumber + '.\n\nMit freundlichen Grüßen\nSCC Courts')}`
       : ''
 
   return (
-    <div className="flex items-center gap-0.5 justify-end">
+    <div className="flex items-center gap-0.5 justify-end" ref={containerRef}>
       <Link
         href={`/quotes/${quoteId}/edit`}
         title="Bearbeiten"
@@ -84,21 +113,22 @@ export function QuoteRowActions({
       >
         <Pencil className="w-4 h-4" />
       </Link>
-      <Link
-        href={`/quotes/${quoteId}`}
-        title="Anzeigen"
-        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+      <a
+        href={`/quotes/${quoteId}/preview`}
+        onClick={openPreviewPopup}
+        title="Vorschau"
+        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
       >
         <Eye className="w-4 h-4" />
-      </Link>
-      <Link
-        href={`/quotes/${quoteId}/preview`}
-        target="_blank"
-        title="Vorschau / Drucken"
-        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+      </a>
+      <a
+        href={`/quotes/${quoteId}/preview?print=1`}
+        onClick={openPrintDialog}
+        title="Als PDF speichern"
+        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
       >
         <Download className="w-4 h-4" />
-      </Link>
+      </a>
       {recipientEmail && (
         <a
           href={mailto}
@@ -109,17 +139,22 @@ export function QuoteRowActions({
         </a>
       )}
 
-      <div className="relative" ref={menuRef}>
+      <div className="relative">
         <button
+          ref={buttonRef}
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={toggle}
           title="Mehr Aktionen"
           className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
         >
           <MoreVertical className="w-4 h-4" />
         </button>
         {open && (
-          <div className="absolute right-0 mt-1 w-60 bg-white border border-slate-200 rounded-lg shadow-lg z-20 py-1 text-sm">
+          <div
+            className={`absolute right-0 w-60 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-sm ${
+              direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'
+            }`}
+          >
             {currentStatus === 'draft' && (
               <button
                 type="button"

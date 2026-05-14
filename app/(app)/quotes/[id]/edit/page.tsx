@@ -10,6 +10,7 @@ import { getAllContactOptions } from '@/lib/db/contacts'
 import { getActiveTeamMemberOptions } from '@/lib/db/team-members'
 import { getActiveProductOptions } from '@/lib/db/products'
 import { getTextModules } from '@/lib/db/text-modules'
+import { getActiveDealOptions } from '@/lib/db/deals'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
 
@@ -26,6 +27,7 @@ export default async function EditQuotePage({
   let teamMembers: any[] = []
   let products: any[] = []
   let textModules: any[] = []
+  let deals: any[] = []
 
   try {
     const supabase = await createClient()
@@ -36,13 +38,14 @@ export default async function EditQuotePage({
       .from('profiles').select('*').eq('id', user.id).single()
     profile = (profileResult.data as Profile) ?? null
 
-    const [q, c, ct, tm, prod, tmod] = await Promise.all([
+    const [q, c, ct, tm, prod, tmod, dls] = await Promise.all([
       getQuoteById(id),
       getAllCompanyOptions(),
       getAllContactOptions(),
       getActiveTeamMemberOptions(),
       getActiveProductOptions(),
       getTextModules(),
+      getActiveDealOptions(),
     ])
     quote = q
     companies = c
@@ -50,6 +53,7 @@ export default async function EditQuotePage({
     teamMembers = tm
     products = prod
     textModules = tmod
+    deals = dls
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Angebot laden" err={err} />
@@ -77,6 +81,7 @@ export default async function EditQuotePage({
           teamMembers={teamMembers}
           products={products}
           textModules={textModules}
+          deals={deals}
           defaultValues={{
             title: quote.title ?? '',
             validUntil: quote.validUntil ? String(quote.validUntil).slice(0, 10) : '',

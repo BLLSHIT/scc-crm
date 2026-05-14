@@ -10,6 +10,7 @@ import { getAllContactOptions } from '@/lib/db/contacts'
 import { getActiveTeamMemberOptions } from '@/lib/db/team-members'
 import { getActiveProductOptions } from '@/lib/db/products'
 import { getTextModules } from '@/lib/db/text-modules'
+import { getActiveDealOptions } from '@/lib/db/deals'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
 
@@ -25,6 +26,7 @@ export default async function NewQuotePage({
   let teamMembers: any[] = []
   let products: any[] = []
   let textModules: any[] = []
+  let deals: any[] = []
   let validUntilDefault = ''
   let prefillFromDeal: { companyId?: string; teamMemberId?: string } = {}
 
@@ -37,19 +39,21 @@ export default async function NewQuotePage({
       .from('profiles').select('*').eq('id', user.id).single()
     profile = (profileResult.data as Profile) ?? null
 
-    const [settings, c, p, tm, prod, tmod] = await Promise.all([
+    const [settings, c, p, tm, prod, tmod, dls] = await Promise.all([
       getSettings(),
       getAllCompanyOptions(),
       getAllContactOptions(),
       getActiveTeamMemberOptions(),
       getActiveProductOptions(),
       getTextModules(),
+      getActiveDealOptions(),
     ])
     companies = c
     contacts = p
     teamMembers = tm
     products = prod
     textModules = tmod
+    deals = dls
 
     const days = settings?.defaultQuoteValidity ?? 30
     const d = new Date()
@@ -86,6 +90,7 @@ export default async function NewQuotePage({
           teamMembers={teamMembers}
           products={products}
           textModules={textModules}
+          deals={deals}
           defaultValues={{
             validUntil: validUntilDefault,
             dealId: sp.dealId ?? '',

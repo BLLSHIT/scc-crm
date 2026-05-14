@@ -48,7 +48,7 @@ async function replaceLineItems(quoteId: string, items: QuoteInput['lineItems'])
     discountPercent: it.itemType === 'text' ? 0 : it.discountPercent,
     vatRate: it.itemType === 'text' ? 0 : it.vatRate,
     isOptional: it.itemType === 'text' ? false : it.isOptional,
-    sortOrder: it.sortOrder ?? idx,
+    sortOrder: idx, // Reihenfolge anhand der Array-Position — Reordering im Editor wird so übernommen
     updatedAt: new Date().toISOString(),
   }))
   const { error } = await supabase.from('quote_line_items').insert(rows)
