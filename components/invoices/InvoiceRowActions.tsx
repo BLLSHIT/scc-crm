@@ -1,0 +1,142 @@
+'use client'
+import { useRef, useState, useEffect, useTransition } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import {
+  Pencil, Eye, Download, Mail, MoreVertical,
+  Send, CheckCircle2, XCircle, Trash2,
+} from 'lucide-react'
+import { updateInvoiceStatus, deleteInvoice } from '@/lib/actions/invoices.actions'
+import { InvoicePreviewDrawer } from '@/components/invoices/InvoicePreviewDrawer'
+import type { InvoiceStatus } from '@/lib/db/invoices'
+
+interface Props {
+  invoiceId: string
+  invoiceNumber: string
+  currentStatus: InvoiceStatus
+  recipientEmail?: string | null
+}
+
+export function InvoiceRowActions({
+  invoiceId, invoiceNumber, currentStatus, recipientEmail,
+}: Props) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [direction, setDirection] = useState<'down' | 'up'>('down')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [, startTransition] = useTransition()
+
+  useEffect(() => {
+    if (!open) return
+    function onClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  function toggle() {
+    if (!open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      setDirection(spaceBelow < 260 ? 'up' : 'down')
+    }
+    setOpen((v) => !v)
+  }
+
+  function changeStatus(next: InvoiceStatus) {
+    setOpen(false)
+    startTransition(async () => {
+      await updateInvoiceStatus(invoiceId, next)
+      router.refresh()
+    })
+  }
+
+  function handleDelete() {
+    setOpen(false)
+    if (!confirm(`Rechnung ${invoiceNumber} wirklich löschen?`)) return
+    startTransition(async () => {
+      await deleteInvoice(invoiceId)
+      router.refresh()
+    })
+  }
+
+  const mailto = recipientEmail
+    ? `mailto:${recipientEmail}?subject=${encodeURIComponent('Rechnung ' + invoiceNumber)}&body=${encodeURIComponent('Sehr geehrte Damen und Herren,\n\nanbei finden Sie unsere Rechnung ' + invoiceNumber + '.\n\nMit freundlichen Grüßen\nSCC Courts')}`
+    : ''
+
+  return (
+    <div className="flex items-center gap-0.5 justify-end" ref={containerRef}>
+      <Link href={`/invoices/${invoiceId}/edit`} title="Bearbeiten"
+        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors">
+        <Pencil className="w-4 h-4" />
+      </Link>
+      <button type="button" onClick={() => setPreviewOpen(true)} title="Vorschau"
+        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors cursor-pointer">
+        <Eye className="w-4 h-4" />
+      </button>
+      <a href={`/api/invoices/${invoiceId}/pdf`} download title="Als PDF herunterladen"
+        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors cursor-pointer">
+        <Download className="w-4 h-4" />
+      </a>
+      {recipientEmail && (
+        <a href={mailto} title={`E-Mail an ${recipientEmail}`}
+          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors">
+          <Mail className="w-4 h-4" />
+        </a>
+      )}
+
+      <div className="relative">
+        <button ref={buttonRef} type="button" onClick={toggle} title="Mehr"
+          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors">
+          <MoreVertical className="w-4 h-4" />
+        </button>
+        {open && (
+          <div className={`absolute right-0 w-60 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-sm ${
+            direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'
+          }`}>
+            {currentStatus === 'draft' && (
+              <button type="button" onClick={() => changeStatus('open')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2">
+                <Send className="w-4 h-4 text-blue-600" />Als versendet/offen markieren
+              </button>
+            )}
+            {currentStatus === 'open' && (
+              <button type="button" onClick={() => changeStatus('paid')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />Als bezahlt markieren
+              </button>
+            )}
+            {(currentStatus === 'draft' || currentStatus === 'open' || currentStatus === 'overdue') && (
+              <button type="button" onClick={() => changeStatus('cancelled')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2">
+                <XCircle className="w-4 h-4 text-red-600" />Stornieren
+              </button>
+            )}
+            <div className="my-1 border-t" />
+            <button type="button" onClick={handleDelete}
+              className="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />Löschen
+            </button>
+          </div>
+        )}
+      </div>
+
+      <InvoicePreviewDrawer
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        invoiceId={invoiceId}
+        invoiceNumber={invoiceNumber}
+      />
+    </div>
+  )
+}

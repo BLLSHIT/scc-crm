@@ -15,6 +15,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { updateQuoteStatus, deleteQuote } from '@/lib/actions/quotes.actions'
+import { convertQuoteToInvoice } from '@/lib/actions/invoices.actions'
 import { QuotePreviewDrawer } from '@/components/quotes/QuotePreviewDrawer'
 import type { QuoteStatus } from '@/lib/db/quotes'
 
@@ -177,7 +178,15 @@ export function QuoteRowActions({
               type="button"
               onClick={() => {
                 setOpen(false)
-                alert('Konvertierung in Rechnung kommt in Phase 2.3.')
+                if (!confirm(`Angebot ${quoteNumber} in eine Rechnung umwandeln?`)) return
+                startTransition(async () => {
+                  const result = await convertQuoteToInvoice(quoteId)
+                  if (result.error) {
+                    alert(result.error._form?.[0] ?? 'Konvertierung fehlgeschlagen.')
+                    return
+                  }
+                  if (result.redirectTo) router.push(result.redirectTo)
+                })
               }}
               className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2"
             >

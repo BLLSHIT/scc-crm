@@ -11,6 +11,8 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { QuoteStatusActions } from '@/components/quotes/QuoteStatusActions'
 import { QuotePreviewTrigger } from '@/components/quotes/QuotePreviewTrigger'
+import { QuoteConvertToInvoice } from '@/components/quotes/QuoteConvertToInvoice'
+import { getInvoiceForQuote } from '@/lib/db/invoices'
 import { Pencil, Trash2, Building2, User, UserCheck, Mail, Phone, FileText, Download } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { calcLine } from '@/lib/utils/line-items'
@@ -42,6 +44,7 @@ export default async function QuoteDetailPage({
   let profile: Profile | null = null
   let quote: any
   let activities: any[] = []
+  let linkedInvoice: any = null
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -52,6 +55,7 @@ export default async function QuoteDetailPage({
     profile = (profileResult.data as Profile) ?? null
     quote = await getQuoteById(id)
     activities = await getActivityLogs('quote', id, 30)
+    linkedInvoice = await getInvoiceForQuote(id)
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Angebot laden" err={err} />
@@ -77,7 +81,10 @@ export default async function QuoteDetailPage({
           title={`${quote.quoteNumber} — ${quote.title}`}
           profile={profile}
           actions={
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {!linkedInvoice && status === 'accepted' && (
+                <QuoteConvertToInvoice quoteId={id} quoteNumber={quote.quoteNumber} />
+              )}
               <QuotePreviewTrigger quoteId={id} quoteNumber={quote.quoteNumber} />
               <a
                 href={`/api/quotes/${id}/pdf`}
@@ -388,6 +395,24 @@ export default async function QuoteDetailPage({
                       {quote.teamMember.mobile}
                     </a>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {linkedInvoice && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-emerald-600" />
+                    Verknüpfte Rechnung
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                  <Link href={`/invoices/${linkedInvoice.id}`}
+                    className="block text-blue-600 hover:underline font-mono">
+                    {linkedInvoice.invoiceNumber}
+                  </Link>
+                  <p className="text-xs text-slate-500 mt-1 capitalize">Status: {linkedInvoice.status}</p>
                 </CardContent>
               </Card>
             )}
