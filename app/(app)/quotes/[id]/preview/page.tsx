@@ -126,11 +126,13 @@ export default async function QuotePreviewPage({
           {/* Briefkopf */}
           <header className="flex items-start justify-between mb-10 avoid-break">
             <div>
-              {settings?.logoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={settings.logoUrl} alt="Logo" className="h-14 mb-3" />
-              )}
-              <p className="font-bold text-base">{settings?.companyName ?? 'SCC Courts'}</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={settings?.logoUrl || 'https://www-static.scc-courts.de/wp-content/uploads/2025/02/Logo-SCC-Courts-AFP-Courts-offizieller-Distributor.webp?media=1761300701'}
+                alt="Logo"
+                className="h-14 mb-3"
+              />
+              <p className="font-bold text-base text-[#036147]">{settings?.companyName ?? 'SCC Courts'}</p>
               {settings?.companyAddress && <p className="text-xs">{settings.companyAddress}</p>}
               {(settings?.companyZip || settings?.companyCity) && (
                 <p className="text-xs">

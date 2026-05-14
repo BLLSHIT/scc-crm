@@ -109,15 +109,20 @@ export function Sidebar({ profile }: SidebarProps) {
   }
 
   return (
-    <aside className="flex flex-col w-64 min-h-screen bg-slate-900 text-slate-100 flex-shrink-0 print:hidden">
+    <aside className="flex flex-col w-64 min-h-screen bg-[#013826] text-[#ecfaf3] flex-shrink-0 print:hidden">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
-        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-sm">SC</span>
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-[#024d39]">
+        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden p-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://www-static.scc-courts.de/wp-content/uploads/2025/02/Logo-SCC-Courts-AFP-Courts-offizieller-Distributor.webp?media=1761300701"
+            alt="SCC Courts"
+            className="w-full h-full object-contain"
+          />
         </div>
         <div className="min-w-0">
-          <p className="font-semibold text-sm truncate">SCC Courts</p>
-          <p className="text-xs text-slate-400">CRM</p>
+          <p className="font-semibold text-sm truncate text-white">SCC Courts</p>
+          <p className="text-xs text-[#a7e7c8]">CRM</p>
         </div>
       </div>
 
@@ -130,8 +135,8 @@ export function Sidebar({ profile }: SidebarProps) {
             className={cn(
               'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
               isItemActive(item.href)
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+                ? 'bg-white text-[#013826] font-medium'
+                : 'text-[#a7e7c8] hover:bg-[#024d39] hover:text-white'
             )}
           >
             <item.icon className="w-4 h-4 flex-shrink-0" />
@@ -144,13 +149,13 @@ export function Sidebar({ profile }: SidebarProps) {
           const isOpen = open[sec.id]
           const hasActiveChild = sec.items.some((it) => isItemActive(it.href))
           return (
-            <div key={sec.id} className="pt-3 mt-3 border-t border-slate-800">
+            <div key={sec.id} className="pt-3 mt-3 border-t border-[#024d39]">
               <button
                 type="button"
                 onClick={() => toggleSection(sec.id)}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs uppercase tracking-wider transition-colors',
-                  hasActiveChild ? 'text-slate-200' : 'text-slate-500 hover:text-slate-300'
+                  hasActiveChild ? 'text-white' : 'text-[#71d3a7] hover:text-[#d2f4e3]'
                 )}
               >
                 <sec.icon className="w-3.5 h-3.5 flex-shrink-0" />
@@ -168,8 +173,8 @@ export function Sidebar({ profile }: SidebarProps) {
                       className={cn(
                         'flex items-center gap-3 pl-9 pr-3 py-2 rounded-lg text-sm transition-colors',
                         isItemActive(item.href)
-                          ? 'bg-blue-600 text-white'
-                          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+                          ? 'bg-white text-[#013826] font-medium'
+                          : 'text-[#a7e7c8] hover:bg-[#024d39] hover:text-white'
                       )}
                     >
                       <item.icon className="w-3.5 h-3.5 flex-shrink-0" />
@@ -184,23 +189,23 @@ export function Sidebar({ profile }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-slate-800 space-y-0.5">
+      <div className="px-3 py-4 border-t border-[#024d39] space-y-0.5">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-[#a7e7c8] hover:bg-[#024d39] hover:text-white transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Abmelden
         </button>
         <div className="flex items-center gap-3 px-3 pt-3">
-          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-white text-[#013826] flex items-center justify-center text-xs font-bold flex-shrink-0">
             {getInitials(profile.firstName, profile.lastName)}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-slate-300 truncate">
+            <p className="text-xs font-medium text-white truncate">
               {profile.firstName} {profile.lastName}
             </p>
-            <p className="text-xs text-slate-500 truncate flex items-center gap-1">
+            <p className="text-xs text-[#71d3a7] truncate flex items-center gap-1">
               <ShieldCheck className="w-3 h-3" />
               {profile.role ?? 'sales'}
             </p>

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, jsx-a11y/alt-text */
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import { calcLine } from '@/lib/utils/line-items'
+import { BRAND } from '@/lib/brand'
 
 // ── Substitution für Platzhalter in Texten ─────────────────────────────
 function substitute(text: string | null | undefined, quote: any): string {
@@ -55,7 +56,7 @@ const s = StyleSheet.create({
   // Letterhead
   letterhead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   logo: { height: 44, marginBottom: 6 },
-  companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11 },
+  companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#036147' },
   metaSmall: { fontSize: 8, color: '#475569' },
 
   // Recipient + Meta
@@ -74,7 +75,7 @@ const s = StyleSheet.create({
   metaSep: { borderTopWidth: 1, borderTopColor: '#cbd5e1', marginTop: 4, paddingTop: 4 },
 
   // Titel
-  h1: { fontFamily: 'Helvetica-Bold', fontSize: 14, marginBottom: 10 },
+  h1: { fontFamily: 'Helvetica-Bold', fontSize: 14, marginBottom: 10, color: '#036147' },
 
   // Texte
   para: { marginBottom: 8 },
@@ -84,10 +85,11 @@ const s = StyleSheet.create({
   trHead: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderTopWidth: 1,
-    borderColor: '#0f172a',
+    borderTopWidth: 2,
+    borderColor: '#036147',
     paddingVertical: 5,
     fontFamily: 'Helvetica-Bold',
+    color: '#036147',
   },
   tr: {
     flexDirection: 'row',
@@ -129,10 +131,11 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 6,
     marginTop: 4,
-    borderTopWidth: 1,
-    borderColor: '#0f172a',
+    borderTopWidth: 2,
+    borderColor: '#036147',
     fontFamily: 'Helvetica-Bold',
     fontSize: 11,
+    color: '#036147',
   },
 
   // Signatur
@@ -184,8 +187,8 @@ export function QuotePDFDocument({ quote, settings }: { quote: any; settings: an
         {/* Letterhead */}
         <View style={s.letterhead}>
           <View>
-            {settings?.logoUrl ? <Image src={settings.logoUrl} style={s.logo} /> : null}
-            <Text style={s.companyName}>{settings?.companyName ?? 'SCC Courts'}</Text>
+            <Image src={settings?.logoUrl || BRAND.logoUrl} style={s.logo} />
+            <Text style={s.companyName}>{settings?.companyName ?? BRAND.name}</Text>
             {settings?.companyAddress ? <Text style={s.metaSmall}>{settings.companyAddress}</Text> : null}
             {settings?.companyZip || settings?.companyCity ? (
               <Text style={s.metaSmall}>

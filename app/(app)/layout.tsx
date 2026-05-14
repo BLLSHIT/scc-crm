@@ -28,7 +28,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-cream overflow-hidden">
       <Sidebar profile={profile as Profile} />
       <div className="flex-1 flex flex-col overflow-hidden">
         {children}

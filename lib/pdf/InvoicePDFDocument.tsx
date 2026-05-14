@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, jsx-a11y/alt-text */
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import { calcLine } from '@/lib/utils/line-items'
+import { BRAND } from '@/lib/brand'
 
 function substitute(text: string | null | undefined, invoice: any): string {
   if (!text) return ''
@@ -43,7 +44,7 @@ const s = StyleSheet.create({
   },
   letterhead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   logo: { height: 44, marginBottom: 6 },
-  companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11 },
+  companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#036147' },
   metaSmall: { fontSize: 8, color: '#475569' },
 
   blocks: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 },
@@ -54,13 +55,13 @@ const s = StyleSheet.create({
   metaVal: { fontFamily: 'Helvetica-Bold', minWidth: 90, textAlign: 'right' },
   metaSep: { borderTopWidth: 1, borderTopColor: '#cbd5e1', marginTop: 4, paddingTop: 4 },
 
-  h1: { fontFamily: 'Helvetica-Bold', fontSize: 14, marginBottom: 10 },
+  h1: { fontFamily: 'Helvetica-Bold', fontSize: 14, marginBottom: 10, color: '#036147' },
   para: { marginBottom: 8 },
 
   table: { marginTop: 10 },
   trHead: {
-    flexDirection: 'row', borderBottomWidth: 1, borderTopWidth: 1, borderColor: '#0f172a',
-    paddingVertical: 5, fontFamily: 'Helvetica-Bold',
+    flexDirection: 'row', borderBottomWidth: 1, borderTopWidth: 2, borderColor: '#036147',
+    paddingVertical: 5, fontFamily: 'Helvetica-Bold', color: '#036147',
   },
   tr: { flexDirection: 'row', borderBottomWidth: 0.5, borderColor: '#e2e8f0', paddingVertical: 5 },
   trText: {
@@ -87,8 +88,8 @@ const s = StyleSheet.create({
   totalsValue: { textAlign: 'right' },
   totalsFinal: {
     flexDirection: 'row', justifyContent: 'space-between',
-    paddingTop: 6, marginTop: 4, borderTopWidth: 1, borderColor: '#0f172a',
-    fontFamily: 'Helvetica-Bold', fontSize: 11,
+    paddingTop: 6, marginTop: 4, borderTopWidth: 2, borderColor: '#036147',
+    fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#036147',
   },
   paidNote: {
     marginTop: 6, padding: 4, backgroundColor: '#ecfdf5',
@@ -129,8 +130,8 @@ export function InvoicePDFDocument({ invoice, settings }: { invoice: any; settin
       <Page size="A4" style={s.page}>
         <View style={s.letterhead}>
           <View>
-            {settings?.logoUrl ? <Image src={settings.logoUrl} style={s.logo} /> : null}
-            <Text style={s.companyName}>{settings?.companyName ?? 'SCC Courts'}</Text>
+            <Image src={settings?.logoUrl || BRAND.logoUrl} style={s.logo} />
+            <Text style={s.companyName}>{settings?.companyName ?? BRAND.name}</Text>
             {settings?.companyAddress ? <Text style={s.metaSmall}>{settings.companyAddress}</Text> : null}
             {settings?.companyZip || settings?.companyCity ? (
               <Text style={s.metaSmall}>

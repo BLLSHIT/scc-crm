@@ -44,8 +44,13 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-4 w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold text-lg">SC</span>
+        <div className="mx-auto mb-4 w-20 h-20 bg-white rounded-xl flex items-center justify-center overflow-hidden p-2 border border-slate-200 shadow-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://www-static.scc-courts.de/wp-content/uploads/2025/02/Logo-SCC-Courts-AFP-Courts-offizieller-Distributor.webp?media=1761300701"
+            alt="SCC Courts"
+            className="w-full h-full object-contain"
+          />
         </div>
         <CardTitle>SCC Courts CRM</CardTitle>
         <CardDescription>Melde dich mit deinem Account an</CardDescription>
