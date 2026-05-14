@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const quoteLineItemSchema = z.object({
+  itemType: z.enum(['product', 'text']).default('product'),
   productId: z.string().optional(),
   name: z.string().min(1, 'Bezeichnung erforderlich'),
   description: z.string().optional(),
@@ -27,6 +28,7 @@ export const quoteSchema = z.object({
   intro: z.string().optional(),
   footer: z.string().optional(),
   paymentTerms: z.string().optional(),
+  globalDiscountPercent: z.coerce.number().min(0).max(100).default(0),
   lineItems: z.array(quoteLineItemSchema).default([]),
 })
 

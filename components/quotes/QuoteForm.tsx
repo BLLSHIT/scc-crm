@@ -16,10 +16,14 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
-  Sparkles,
+  AlignLeft,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils/format'
 import { calcLine, calcQuoteTotals } from '@/lib/utils/line-items'
+import {
+  ProductPickerDrawer,
+  type PickedProduct,
+} from '@/components/quotes/ProductPickerDrawer'
 import type { ActionResult } from '@/lib/actions/quotes.actions'
 
 interface CompanyOption { id: string; name: string }
@@ -40,6 +44,7 @@ interface ProductOption {
   id: string
   name: string
   description?: string | null
+  category?: string | null
   unit: string
   defaultPriceNet: number | string
   defaultVatRate: number | string
@@ -77,8 +82,8 @@ export function QuoteForm({
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
-  // Default-Textbausteine bei neuem Angebot vorbelegen
   const defaultGreeting = useMemo(
     () => textModules.find((m) => m.type === 'greeting' && m.isDefault)?.content ?? '',
     [textModules]
@@ -111,53 +116,58 @@ export function QuoteForm({
         intro: defaultIntro,
         footer: defaultFooter,
         paymentTerms: defaultPayment,
+        globalDiscountPercent: 0,
         lineItems: [],
         ...defaultValues,
       },
     })
 
-  const { fields, append, remove, swap } = useFieldArray({ control, name: 'lineItems' })
+  const { fields, append, remove, swap } = useFieldArray({
+    control,
+    name: 'lineItems',
+  })
 
-  // Reagiere auf Company-Auswahl → filtere Contact-Optionen
   const watchedCompanyId = useWatch({ control, name: 'companyId' }) ?? ''
   const filteredContacts = watchedCompanyId
     ? contacts.filter((c) => c.companyId === watchedCompanyId)
     : contacts
 
-  // Live-Totals
   const watchedItems = useWatch({ control, name: 'lineItems' }) ?? []
+  const watchedGlobalDiscount = Number(useWatch({ control, name: 'globalDiscountPercent' }) ?? 0)
   const totals = calcQuoteTotals(
-    watchedItems.map((it) => ({
+    watchedItems.map((it: any) => ({
+      itemType: it.itemType,
       quantity: Number(it.quantity) || 0,
       unitPriceNet: Number(it.unitPriceNet) || 0,
       discountPercent: Number(it.discountPercent) || 0,
       vatRate: Number(it.vatRate) || 0,
       isOptional: Boolean(it.isOptional),
-    }))
+    })),
+    watchedGlobalDiscount
   )
 
-  // Produkt aus Katalog hinzufügen
-  function addFromProduct(productId: string) {
-    if (!productId) return
-    const p = products.find((x) => x.id === productId)
-    if (!p) return
-    append({
-      productId: p.id,
+  function addPickedProducts(picked: PickedProduct[]) {
+    const base = fields.length
+    const rows = picked.map((p, i) => ({
+      itemType: 'product' as const,
+      productId: p.productId,
       name: p.name,
-      description: p.description ?? '',
-      imageUrl: p.imageUrl ?? '',
+      description: p.description,
+      imageUrl: p.imageUrl,
       unit: p.unit,
-      quantity: 1,
-      unitPriceNet: Number(p.defaultPriceNet) || 0,
+      quantity: p.quantity,
+      unitPriceNet: p.unitPriceNet,
       discountPercent: 0,
-      vatRate: Number(p.defaultVatRate) || 19,
+      vatRate: p.defaultVatRate,
       isOptional: false,
-      sortOrder: fields.length,
-    })
+      sortOrder: base + i,
+    }))
+    append(rows)
   }
 
   function addFreeItem() {
     append({
+      itemType: 'product',
       name: '',
       description: '',
       imageUrl: '',
@@ -166,6 +176,22 @@ export function QuoteForm({
       unitPriceNet: 0,
       discountPercent: 0,
       vatRate: 19,
+      isOptional: false,
+      sortOrder: fields.length,
+    })
+  }
+
+  function addTextLine() {
+    append({
+      itemType: 'text',
+      name: '',
+      description: '',
+      imageUrl: '',
+      unit: 'Stück',
+      quantity: 0,
+      unitPriceNet: 0,
+      discountPercent: 0,
+      vatRate: 0,
       isOptional: false,
       sortOrder: fields.length,
     })
@@ -200,13 +226,14 @@ export function QuoteForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-6 max-w-5xl">
+    <form onSubmit={handleSubmit(submit)} className="space-y-6">
       {serverError && (
         <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           <strong>Fehler:</strong> {serverError}
         </div>
       )}
 
+      {/* Kopf — volle Breite */}
       <Card>
         <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -272,135 +299,168 @@ export function QuoteForm({
         </CardContent>
       </Card>
 
-      {/* Texte mit Textbaustein-Picker */}
-      <Card>
-        <CardHeader><CardTitle>Texte</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <TextBlockField
-            id="greeting"
-            label="Begrüßung"
-            register={register}
-            setValue={setValue}
-            field="greeting"
-            modules={modulesOfType('greeting')}
-            placeholder="Sehr geehrte/r…"
-          />
-          <TextBlockField
-            id="intro"
-            label="Einleitung"
-            register={register}
-            setValue={setValue}
-            field="intro"
-            modules={modulesOfType('intro')}
-            placeholder="vielen Dank für Ihre Anfrage…"
-            rows={4}
-          />
-          <TextBlockField
-            id="paymentTerms"
-            label="Zahlungsbedingungen"
-            register={register}
-            setValue={setValue}
-            field="paymentTerms"
-            modules={modulesOfType('payment_terms')}
-            placeholder="Zahlungsziel: 14 Tage netto…"
-          />
-          <TextBlockField
-            id="footer"
-            label="Fußzeile"
-            register={register}
-            setValue={setValue}
-            field="footer"
-            modules={modulesOfType('footer')}
-            placeholder="Wir freuen uns auf Ihre Rückmeldung…"
-          />
-        </CardContent>
-      </Card>
-
-      {/* Line items */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <CardTitle>Positionen ({fields.length})</CardTitle>
-            <div className="flex items-center gap-2 flex-wrap">
-              <select
-                defaultValue=""
-                onChange={(e) => {
-                  addFromProduct(e.target.value)
-                  e.currentTarget.value = ''
-                }}
-                className="border border-input bg-background px-3 py-1.5 text-sm rounded-md max-w-xs"
-              >
-                <option value="" disabled>
-                  + Aus Produkt-Katalog hinzufügen…
-                </option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({Number(p.defaultPriceNet).toLocaleString('de-DE')} €)
-                  </option>
-                ))}
-              </select>
-              <Button type="button" size="sm" variant="outline" onClick={addFreeItem}>
-                <Plus className="w-4 h-4 mr-1" />
-                Freie Position
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {fields.length === 0 ? (
-            <div className="px-5 py-8 text-center text-slate-400 text-sm">
-              <PackageOpen className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-              Keine Positionen. Füge oben Produkte aus dem Katalog oder freie Positionen hinzu.
-            </div>
-          ) : (
-            <div className="divide-y">
-              {fields.map((field, idx) => (
-                <LineItemRow
-                  key={field.id}
-                  index={idx}
-                  total={fields.length}
-                  register={register}
-                  control={control}
-                  onUp={() => idx > 0 && swap(idx, idx - 1)}
-                  onDown={() => idx < fields.length - 1 && swap(idx, idx + 1)}
-                  onRemove={() => remove(idx)}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Live Totals */}
-      <Card>
-        <CardContent className="p-5">
-          <div className="max-w-sm ml-auto space-y-1.5 text-sm">
-            <div className="flex justify-between text-slate-600">
-              <span>Zwischensumme netto</span>
-              <span>{formatCurrency(totals.subtotalNet, 'EUR')}</span>
-            </div>
-            {totals.totalDiscount > 0 && (
-              <div className="flex justify-between text-slate-600">
-                <span>− Rabatt</span>
-                <span>{formatCurrency(totals.totalDiscount, 'EUR')}</span>
+      {/* Hauptbereich: 2/3 Positionen+Totals  |  1/3 Texte */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Positionen */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <CardTitle>Positionen ({fields.length})</CardTitle>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setDrawerOpen(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Aus Katalog
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={addFreeItem}>
+                    <Plus className="w-4 h-4 mr-1" />
+                    Freie Position
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={addTextLine}>
+                    <AlignLeft className="w-4 h-4 mr-1" />
+                    Freitextzeile
+                  </Button>
+                </div>
               </div>
-            )}
-            <div className="flex justify-between text-slate-600">
-              <span>MwSt</span>
-              <span>{formatCurrency(totals.totalVat, 'EUR')}</span>
-            </div>
-            <div className="flex justify-between font-semibold text-base pt-2 mt-2 border-t text-slate-900">
-              <span>Gesamtsumme brutto</span>
-              <span>{formatCurrency(totals.totalGross, 'EUR')}</span>
-            </div>
-            {watchedItems.some((i: any) => i.isOptional) && (
-              <p className="text-xs text-amber-700 italic mt-3">
-                Optionale Positionen sind nicht in der Summe enthalten.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent className="p-0">
+              {fields.length === 0 ? (
+                <div className="px-5 py-10 text-center text-slate-400 text-sm">
+                  <PackageOpen className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                  Noch keine Positionen.
+                  <p className="mt-1">
+                    Füge Produkte aus dem Katalog, freie Positionen oder Freitextzeilen hinzu.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {fields.map((field, idx) => (
+                    <LineItemRow
+                      key={field.id}
+                      index={idx}
+                      total={fields.length}
+                      register={register}
+                      control={control}
+                      onUp={() => idx > 0 && swap(idx, idx - 1)}
+                      onDown={() => idx < fields.length - 1 && swap(idx, idx + 1)}
+                      onRemove={() => remove(idx)}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Totals */}
+          <Card>
+            <CardContent className="p-5">
+              <div className="max-w-md ml-auto space-y-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="globalDiscountPercent" className="font-normal text-slate-600">
+                    Gesamtrabatt (%)
+                  </Label>
+                  <div className="w-28">
+                    <Input
+                      id="globalDiscountPercent"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      {...register('globalDiscountPercent')}
+                      className="text-right"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t space-y-1.5">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Zwischensumme netto</span>
+                    <span>{formatCurrency(totals.subtotalNet, 'EUR')}</span>
+                  </div>
+                  {totals.totalDiscount > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>− Positions-Rabatte</span>
+                      <span>{formatCurrency(totals.totalDiscount, 'EUR')}</span>
+                    </div>
+                  )}
+                  {totals.globalDiscountAmount > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>− Gesamtrabatt ({Number(watchedGlobalDiscount)}%)</span>
+                      <span>{formatCurrency(totals.globalDiscountAmount, 'EUR')}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-slate-600">
+                    <span>MwSt</span>
+                    <span>{formatCurrency(totals.totalVat, 'EUR')}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-base pt-2 mt-2 border-t text-slate-900">
+                    <span>Gesamtsumme brutto</span>
+                    <span>{formatCurrency(totals.totalGross, 'EUR')}</span>
+                  </div>
+                  {watchedItems.some((i: any) => i.isOptional) && (
+                    <p className="text-xs text-amber-700 italic mt-3">
+                      Optionale Positionen sind nicht in der Summe enthalten.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Rechte Spalte — Texte */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Texte</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <TextBlockField
+                id="greeting"
+                label="Begrüßung"
+                register={register}
+                setValue={setValue}
+                field="greeting"
+                modules={modulesOfType('greeting')}
+                placeholder="Sehr geehrte/r…"
+                rows={2}
+              />
+              <TextBlockField
+                id="intro"
+                label="Einleitung"
+                register={register}
+                setValue={setValue}
+                field="intro"
+                modules={modulesOfType('intro')}
+                placeholder="vielen Dank für Ihre Anfrage…"
+                rows={4}
+              />
+              <TextBlockField
+                id="paymentTerms"
+                label="Zahlungsbedingungen"
+                register={register}
+                setValue={setValue}
+                field="paymentTerms"
+                modules={modulesOfType('payment_terms')}
+                placeholder="Zahlungsziel: 14 Tage netto…"
+                rows={3}
+              />
+              <TextBlockField
+                id="footer"
+                label="Fußzeile"
+                register={register}
+                setValue={setValue}
+                field="footer"
+                modules={modulesOfType('footer')}
+                placeholder="Wir freuen uns auf Ihre Rückmeldung…"
+                rows={2}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       <div className="flex gap-3">
         <Button type="submit" disabled={isPending}>
@@ -410,6 +470,13 @@ export function QuoteForm({
           Abbrechen
         </Button>
       </div>
+
+      <ProductPickerDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        products={products}
+        onAdd={addPickedProducts}
+      />
     </form>
   )
 }
@@ -457,10 +524,7 @@ function TextBlockField({
             }}
             className="text-xs border border-input bg-background px-2 py-1 rounded-md"
           >
-            <option value="" disabled>
-              <Sparkles className="inline w-3 h-3 mr-1" />
-              Textbaustein einfügen…
-            </option>
+            <option value="" disabled>+ Baustein…</option>
             {modules.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.isDefault ? '★ ' : ''}{m.name}
@@ -493,9 +557,11 @@ function LineItemRow({
   onDown: () => void
   onRemove: () => void
 }) {
-  // Watch the row for live preview of net total
   const item = useWatch({ control, name: `lineItems.${index}` }) ?? {}
+  const isText = item.itemType === 'text'
+
   const calc = calcLine({
+    itemType: item.itemType,
     quantity: Number(item.quantity) || 0,
     unitPriceNet: Number(item.unitPriceNet) || 0,
     discountPercent: Number(item.discountPercent) || 0,
@@ -504,7 +570,11 @@ function LineItemRow({
   })
 
   return (
-    <div className={`p-4 space-y-3 ${item.isOptional ? 'bg-amber-50/40' : ''}`}>
+    <div
+      className={`p-4 ${
+        isText ? 'bg-slate-50/70' : item.isOptional ? 'bg-amber-50/40' : ''
+      }`}
+    >
       <div className="flex items-start gap-3">
         <div className="flex flex-col items-center gap-0.5 pt-1">
           <span className="text-xs text-slate-400 font-medium">{index + 1}</span>
@@ -528,107 +598,128 @@ function LineItemRow({
           </button>
         </div>
 
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-2 min-w-0">
+          <input type="hidden" {...register(`lineItems.${index}.itemType`)} />
           <input type="hidden" {...register(`lineItems.${index}.productId`)} />
           <input type="hidden" {...register(`lineItems.${index}.imageUrl`)} />
           <input type="hidden" {...register(`lineItems.${index}.sortOrder`)} value={index} />
 
-          <Input
-            placeholder="Bezeichnung *"
-            {...register(`lineItems.${index}.name`)}
-          />
-          <Textarea
-            placeholder="Beschreibung (optional)"
-            rows={2}
-            {...register(`lineItems.${index}.description`)}
-          />
-
-          <div className="grid grid-cols-6 gap-2">
-            <div>
-              <Label className="text-xs">Menge</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                {...register(`lineItems.${index}.quantity`)}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Einheit</Label>
-              <select
-                {...register(`lineItems.${index}.unit`)}
-                className="w-full border border-input bg-background px-2 py-2 text-sm rounded-md"
-              >
-                <option value="Stück">Stück</option>
-                <option value="m²">m²</option>
-                <option value="m">m</option>
-                <option value="Std.">Std.</option>
-                <option value="Tag">Tag</option>
-                <option value="Pauschal">Pauschal</option>
-              </select>
-            </div>
-            <div>
-              <Label className="text-xs">Einzel netto €</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                {...register(`lineItems.${index}.unitPriceNet`)}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Rabatt %</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                {...register(`lineItems.${index}.discountPercent`)}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">MwSt %</Label>
-              <select
-                {...register(`lineItems.${index}.vatRate`)}
-                className="w-full border border-input bg-background px-2 py-2 text-sm rounded-md"
-              >
-                <option value="19">19%</option>
-                <option value="7">7%</option>
-                <option value="0">0%</option>
-              </select>
-            </div>
-            <div>
-              <Label className="text-xs">Netto-Summe</Label>
-              <div className="px-2 py-2 text-sm bg-slate-50 border rounded-md font-medium text-right">
-                {formatCurrency(calc.net, 'EUR')}
+          {isText ? (
+            <>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <AlignLeft className="w-3 h-3" />
+                Freitextzeile (keine Berechnung)
               </div>
-            </div>
-          </div>
+              <Textarea
+                placeholder="Text / Zwischenüberschrift…"
+                rows={2}
+                {...register(`lineItems.${index}.name`)}
+              />
+            </>
+          ) : (
+            <>
+              <Input
+                placeholder="Bezeichnung *"
+                {...register(`lineItems.${index}.name`)}
+              />
+              <Textarea
+                placeholder="Beschreibung (optional)"
+                rows={2}
+                {...register(`lineItems.${index}.description`)}
+              />
+
+              <div className="grid grid-cols-6 gap-2">
+                <div>
+                  <Label className="text-xs">Menge</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...register(`lineItems.${index}.quantity`)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Einheit</Label>
+                  <select
+                    {...register(`lineItems.${index}.unit`)}
+                    className="w-full border border-input bg-background px-2 py-2 text-sm rounded-md"
+                  >
+                    <option value="Stück">Stück</option>
+                    <option value="m²">m²</option>
+                    <option value="m">m</option>
+                    <option value="Std.">Std.</option>
+                    <option value="Tag">Tag</option>
+                    <option value="Pauschal">Pauschal</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Einzel netto €</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...register(`lineItems.${index}.unitPriceNet`)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Rabatt %</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    {...register(`lineItems.${index}.discountPercent`)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">MwSt %</Label>
+                  <select
+                    {...register(`lineItems.${index}.vatRate`)}
+                    className="w-full border border-input bg-background px-2 py-2 text-sm rounded-md"
+                  >
+                    <option value="19">19%</option>
+                    <option value="7">7%</option>
+                    <option value="0">0%</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Netto-Summe</Label>
+                  <div className="px-2 py-2 text-sm bg-white border rounded-md font-medium text-right">
+                    {formatCurrency(calc.net, 'EUR')}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="flex items-center justify-between pt-1">
-            <Controller
-              control={control}
-              name={`lineItems.${index}.isOptional`}
-              render={({ field }) => (
-                <label className="flex items-center gap-2 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!field.value}
-                    onChange={(e) => field.onChange(e.target.checked)}
-                  />
-                  <span className="text-amber-700">
-                    Optionale Position (nicht in Summe)
-                  </span>
-                </label>
-              )}
-            />
+            {!isText ? (
+              <Controller
+                control={control}
+                name={`lineItems.${index}.isOptional`}
+                render={({ field }) => (
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                    <span className="text-amber-700">
+                      Optionale Position (nicht in Summe)
+                    </span>
+                  </label>
+                )}
+              />
+            ) : (
+              <span />
+            )}
             <button
               type="button"
               onClick={onRemove}
               className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
             >
               <Trash2 className="w-3 h-3" />
-              Position entfernen
+              Entfernen
             </button>
           </div>
         </div>

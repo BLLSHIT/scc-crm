@@ -67,10 +67,11 @@ model Quote {
   dealId       String?
   deal         Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
 
-  subtotalNet   Decimal @default(0) @db.Decimal(12, 2)
-  totalDiscount Decimal @default(0) @db.Decimal(12, 2)
-  totalVat      Decimal @default(0) @db.Decimal(12, 2)
-  totalGross    Decimal @default(0) @db.Decimal(12, 2)
+  subtotalNet           Decimal @default(0)  @db.Decimal(12, 2)
+  totalDiscount         Decimal @default(0)  @db.Decimal(12, 2)
+  totalVat              Decimal @default(0)  @db.Decimal(12, 2)
+  totalGross            Decimal @default(0)  @db.Decimal(12, 2)
+  globalDiscountPercent Decimal @default(0)  @db.Decimal(5, 2)
 
   greeting      String?
   intro         String?
@@ -100,6 +101,7 @@ model QuoteLineItem {
   productId       String?
   product         Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
+  itemType        String  @default("product")
   name            String
   description     String?
   imageUrl        String?

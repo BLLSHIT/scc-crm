@@ -88,7 +88,9 @@ export default async function EditQuotePage({
             intro: quote.intro ?? '',
             footer: quote.footer ?? '',
             paymentTerms: quote.paymentTerms ?? '',
+            globalDiscountPercent: Number(quote.globalDiscountPercent ?? 0),
             lineItems: (quote.lineItems ?? []).map((it: any) => ({
+              itemType: (it.itemType ?? 'product') as 'product' | 'text',
               productId: it.productId ?? '',
               name: it.name ?? '',
               description: it.description ?? '',

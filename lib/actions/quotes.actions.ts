@@ -25,6 +25,7 @@ function quotePayload(input: QuoteInput) {
     intro: input.intro?.trim() || null,
     footer: input.footer?.trim() || null,
     paymentTerms: input.paymentTerms?.trim() || null,
+    globalDiscountPercent: input.globalDiscountPercent ?? 0,
   }
 }
 
@@ -36,16 +37,17 @@ async function replaceLineItems(quoteId: string, items: QuoteInput['lineItems'])
   const rows = items.map((it, idx) => ({
     id: randomUUID(),
     quoteId,
+    itemType: it.itemType ?? 'product',
     productId: it.productId || null,
     name: it.name,
     description: it.description?.trim() || null,
     imageUrl: it.imageUrl?.trim() || null,
     unit: it.unit || 'Stück',
-    quantity: it.quantity,
-    unitPriceNet: it.unitPriceNet,
-    discountPercent: it.discountPercent,
-    vatRate: it.vatRate,
-    isOptional: it.isOptional,
+    quantity: it.itemType === 'text' ? 0 : it.quantity,
+    unitPriceNet: it.itemType === 'text' ? 0 : it.unitPriceNet,
+    discountPercent: it.itemType === 'text' ? 0 : it.discountPercent,
+    vatRate: it.itemType === 'text' ? 0 : it.vatRate,
+    isOptional: it.itemType === 'text' ? false : it.isOptional,
     sortOrder: it.sortOrder ?? idx,
     updatedAt: new Date().toISOString(),
   }))
@@ -64,7 +66,7 @@ export async function createQuote(input: QuoteInput): Promise<ActionResult> {
   const supabase = await createClient()
   const id = randomUUID()
   const quoteNumber = await getNextDocumentNumber('quote')
-  const totals = calcQuoteTotals(parsed.data.lineItems)
+  const totals = calcQuoteTotals(parsed.data.lineItems, parsed.data.globalDiscountPercent)
 
   const { error } = await supabase.from('quotes').insert({
     id,
@@ -97,7 +99,7 @@ export async function updateQuote(id: string, input: QuoteInput): Promise<Action
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
 
   const supabase = await createClient()
-  const totals = calcQuoteTotals(parsed.data.lineItems)
+  const totals = calcQuoteTotals(parsed.data.lineItems, parsed.data.globalDiscountPercent)
 
   const { error } = await supabase
     .from('quotes')

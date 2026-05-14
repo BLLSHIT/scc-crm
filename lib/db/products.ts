@@ -29,8 +29,9 @@ export async function getActiveProductOptions() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, description, unit, defaultPriceNet, defaultVatRate, imageUrl')
+    .select('id, name, description, category, unit, defaultPriceNet, defaultVatRate, imageUrl')
     .eq('isActive', true)
+    .order('category', { ascending: true })
     .order('name', { ascending: true })
   if (error) {
     console.error('[getActiveProductOptions] error:', error)
