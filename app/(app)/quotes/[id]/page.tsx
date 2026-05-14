@@ -8,7 +8,8 @@ import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { QuoteStatusActions } from '@/components/quotes/QuoteStatusActions'
-import { Pencil, Trash2, Building2, User, UserCheck, Mail, Phone, FileText, Eye, Download } from 'lucide-react'
+import { QuotePreviewTrigger } from '@/components/quotes/QuotePreviewTrigger'
+import { Pencil, Trash2, Building2, User, UserCheck, Mail, Phone, FileText, Download } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { calcLine } from '@/lib/utils/line-items'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
@@ -73,14 +74,7 @@ export default async function QuoteDetailPage({
           profile={profile}
           actions={
             <div className="flex gap-2">
-              <Link
-                href={`/quotes/${id}/preview`}
-                target="_blank"
-                className={buttonVariants({ size: 'sm', variant: 'outline' })}
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Vorschau
-              </Link>
+              <QuotePreviewTrigger quoteId={id} quoteNumber={quote.quoteNumber} />
               <a
                 href={`/api/quotes/${id}/pdf`}
                 download

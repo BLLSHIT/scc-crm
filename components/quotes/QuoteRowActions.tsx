@@ -15,6 +15,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { updateQuoteStatus, deleteQuote } from '@/lib/actions/quotes.actions'
+import { QuotePreviewDrawer } from '@/components/quotes/QuotePreviewDrawer'
 import type { QuoteStatus } from '@/lib/db/quotes'
 
 interface Props {
@@ -32,6 +33,7 @@ export function QuoteRowActions({
 }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [direction, setDirection] = useState<'down' | 'up'>('down')
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -81,14 +83,7 @@ export function QuoteRowActions({
     })
   }
 
-  function openPreviewPopup(e: React.MouseEvent) {
-    e.preventDefault()
-    window.open(
-      `/quotes/${quoteId}/preview`,
-      `quote-${quoteId}`,
-      'width=960,height=1100,scrollbars=yes'
-    )
-  }
+  // Vorschau → Off-Canvas-Drawer (im selben Fenster)
 
   // Download = direkter <a download> Aufruf auf den PDF-Endpoint, kein Handler nötig
 
@@ -106,14 +101,14 @@ export function QuoteRowActions({
       >
         <Pencil className="w-4 h-4" />
       </Link>
-      <a
-        href={`/quotes/${quoteId}/preview`}
-        onClick={openPreviewPopup}
+      <button
+        type="button"
+        onClick={() => setPreviewOpen(true)}
         title="Vorschau"
         className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
       >
         <Eye className="w-4 h-4" />
-      </a>
+      </button>
       <a
         href={`/api/quotes/${quoteId}/pdf`}
         download
@@ -201,6 +196,13 @@ export function QuoteRowActions({
           </div>
         )}
       </div>
+
+      <QuotePreviewDrawer
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        quoteId={quoteId}
+        quoteNumber={quoteNumber}
+      />
     </div>
   )
 }
