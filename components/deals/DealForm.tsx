@@ -241,7 +241,7 @@ export function DealForm({
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label>Ansprechpersonen</Label>
+              <Label>Ansprechpartner</Label>
               {watchedCompanyId && !showQuickAdd && (
                 <button
                   type="button"
@@ -256,7 +256,7 @@ export function DealForm({
 
             {!watchedCompanyId ? (
               <p className="text-xs text-slate-500 italic">
-                Wähle zuerst eine Firma — Ansprechpersonen werden danach gefiltert.
+                Wähle zuerst eine Firma — Ansprechpartner werden danach gefiltert.
               </p>
             ) : visibleContacts.length === 0 && !showQuickAdd ? (
               <p className="text-xs text-slate-500 italic">

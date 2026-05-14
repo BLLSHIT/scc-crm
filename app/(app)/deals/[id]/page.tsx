@@ -3,11 +3,12 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getDealById } from '@/lib/db/deals'
+import { getQuotesByDealId } from '@/lib/db/quotes'
 import { deleteDeal } from '@/lib/actions/deals.actions'
 import { Header } from '@/components/layout/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Building2, Users, Pencil, Trash2, Calendar, UserCheck, Mail, Phone } from 'lucide-react'
+import { Building2, Users, Pencil, Trash2, Calendar, UserCheck, Mail, Phone, FileText, Plus } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import type { Profile } from '@/types/app.types'
 
@@ -62,8 +63,10 @@ export default async function DealDetailPage({
   }
 
   let deal: any
+  let dealQuotes: any[] = []
   try {
     deal = await getDealById(id)
+    dealQuotes = await getQuotesByDealId(id)
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="getDealById" err={err} />
@@ -86,6 +89,12 @@ export default async function DealDetailPage({
           profile={profile}
           actions={
             <div className="flex gap-2">
+              <Link
+                href={`/quotes/new?dealId=${id}`}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <FileText className="w-4 h-4" />Neues Angebot
+              </Link>
               <Link
                 href={`/deals/${id}/edit`}
                 className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-slate-50 transition-colors"
@@ -222,6 +231,52 @@ export default async function DealDetailPage({
                 </CardContent>
               </Card>
             )}
+
+            {/* Verknüpfte Angebote */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-slate-400" />
+                    Angebote ({dealQuotes.length})
+                  </CardTitle>
+                  <Link
+                    href={`/quotes/new?dealId=${id}`}
+                    className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Neu
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {dealQuotes.length === 0 ? (
+                  <p className="text-xs text-slate-400">Noch kein Angebot.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {dealQuotes.map((q) => (
+                      <li key={q.id}>
+                        <Link
+                          href={`/quotes/${q.id}`}
+                          className="block p-2 -mx-2 rounded hover:bg-slate-50"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-mono text-xs text-blue-600 font-medium">
+                              {q.quoteNumber}
+                            </span>
+                            <span className="text-xs font-medium">
+                              {formatCurrency(Number(q.totalGross ?? 0), 'EUR')}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 truncate">{q.title}</p>
+                          <p className="text-xs text-slate-400 capitalize">{q.status}</p>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
 
             {deal.company && (
               <Card>

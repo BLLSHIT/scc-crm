@@ -35,6 +35,20 @@ export async function getQuotes(filters: QuoteFilters = {}) {
   return data ?? []
 }
 
+export async function getQuotesByDealId(dealId: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('quotes')
+    .select('id, quoteNumber, title, status, totalGross, validUntil, createdAt')
+    .eq('dealId', dealId)
+    .order('createdAt', { ascending: false })
+  if (error) {
+    console.error('[getQuotesByDealId] error:', error)
+    return []
+  }
+  return data ?? []
+}
+
 export async function getQuoteById(id: string) {
   const supabase = await createClient()
   const { data, error } = await supabase
