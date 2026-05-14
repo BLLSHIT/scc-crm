@@ -9,6 +9,8 @@ import { deleteDeal } from '@/lib/actions/deals.actions'
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
 import { DealAttachmentsCard } from '@/components/attachments/DealAttachmentsCard'
 import { getDealAttachments } from '@/lib/db/attachments'
+import { DealConvertToProject } from '@/components/projects/DealConvertToProject'
+import { getProjectsByDealId } from '@/lib/db/projects'
 import { Header } from '@/components/layout/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -70,11 +72,13 @@ export default async function DealDetailPage({
   let dealQuotes: any[] = []
   let activities: any[] = []
   let attachments: any[] = []
+  let dealProjects: any[] = []
   try {
     deal = await getDealById(id)
     dealQuotes = await getQuotesByDealId(id)
     activities = await getActivityLogs('deal', id, 30)
     attachments = await getDealAttachments(id)
+    dealProjects = await getProjectsByDealId(id)
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="getDealById" err={err} />
@@ -96,7 +100,10 @@ export default async function DealDetailPage({
           title={deal.title ?? '(ohne Titel)'}
           profile={profile}
           actions={
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {dealProjects.length === 0 && (
+                <DealConvertToProject dealId={id} dealTitle={deal.title ?? ''} />
+              )}
               <Link
                 href={`/quotes/new?dealId=${id}`}
                 className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -240,6 +247,30 @@ export default async function DealDetailPage({
                       {deal.teamMember.mobile}
                     </a>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {dealProjects.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-emerald-600" />
+                    Projekte ({dealProjects.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {dealProjects.map((pr: any) => (
+                      <li key={pr.id}>
+                        <Link href={`/projects/${pr.id}`}
+                          className="block p-2 -mx-2 rounded hover:bg-slate-50 text-sm">
+                          <p className="font-medium text-blue-600">{pr.name}</p>
+                          <p className="text-xs text-slate-500 capitalize">Status: {pr.status}</p>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 </CardContent>
               </Card>
             )}
