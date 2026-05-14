@@ -23,7 +23,7 @@ export default async function EditTaskPage({
   let task: any
   let companies: { id: string; label: string }[] = []
   let contacts: { id: string; label: string }[] = []
-  let deals: { id: string; label: string }[] = []
+  let deals: { id: string; label: string; companyId?: string | null }[] = []
 
   try {
     const supabase = await createClient()
@@ -39,11 +39,11 @@ export default async function EditTaskPage({
     const [c, p, dResult] = await Promise.all([
       getAllCompanyOptions(),
       getAllContactOptions(),
-      supabase.from('deals').select('id, title').order('createdAt', { ascending: false }),
+      supabase.from('deals').select('id, title, companyId').order('createdAt', { ascending: false }),
     ])
     companies = c.map((x) => ({ id: x.id, label: x.name }))
     contacts = p.map((x) => ({ id: x.id, label: `${x.firstName} ${x.lastName}` }))
-    deals = (dResult.data ?? []).map((x: any) => ({ id: x.id, label: x.title }))
+    deals = (dResult.data ?? []).map((x: any) => ({ id: x.id, label: x.title, companyId: x.companyId }))
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Aufgabe laden" err={err} />

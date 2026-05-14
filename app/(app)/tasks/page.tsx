@@ -6,7 +6,7 @@ import { getTasks } from '@/lib/db/tasks'
 import { Header } from '@/components/layout/Header'
 import { SearchBar } from '@/components/layout/SearchBar'
 import { buttonVariants } from '@/components/ui/button'
-import { Plus, CheckCircle2, Circle, Clock } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import { TaskStatusToggle } from '@/components/tasks/TaskStatusToggle'
@@ -87,18 +87,17 @@ export default async function TasksPage({
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b">
               <tr>
-                <th className="w-10"></th>
+                <th className="w-16 text-left px-4 py-3 font-medium text-slate-600">Status</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-600">Titel</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-600">Priorität</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-600">Fällig</th>
                 <th className="text-left px-4 py-3 font-medium text-slate-600">Verknüpft mit</th>
-                <th className="w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {tasks.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
                     Keine Aufgaben.{' '}
                     <Link href="/tasks/new" className="text-blue-600 hover:underline">
                       Erste Aufgabe anlegen
@@ -144,25 +143,22 @@ export default async function TasksPage({
                         <span className="text-slate-300">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs">
+                    <td className="px-4 py-3 text-slate-500 text-xs space-y-0.5">
                       {t.deal && (
-                        <Link href={`/deals/${t.deal.id}`} className="hover:underline">
-                          🤝 {t.deal.title}
+                        <Link href={`/deals/${t.deal.id}`} className="block hover:underline">
+                          Deal: {t.deal.title}
                         </Link>
                       )}
                       {t.contact && (
-                        <Link href={`/contacts/${t.contact.id}`} className="hover:underline">
-                          👤 {t.contact.firstName} {t.contact.lastName}
+                        <Link href={`/contacts/${t.contact.id}`} className="block hover:underline">
+                          Kontakt: {t.contact.firstName} {t.contact.lastName}
                         </Link>
                       )}
                       {t.company && (
-                        <Link href={`/companies/${t.company.id}`} className="hover:underline">
-                          🏢 {t.company.name}
+                        <Link href={`/companies/${t.company.id}`} className="block hover:underline">
+                          Firma: {t.company.name}
                         </Link>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusIcon status={t.status} />
                     </td>
                   </tr>
                 )
@@ -189,8 +185,3 @@ function PriorityBadge({ priority }: { priority: 'low' | 'medium' | 'high' }) {
   )
 }
 
-function StatusIcon({ status }: { status: 'open' | 'in_progress' | 'done' }) {
-  if (status === 'done') return <CheckCircle2 className="w-4 h-4 text-green-600" />
-  if (status === 'in_progress') return <Clock className="w-4 h-4 text-amber-500" />
-  return <Circle className="w-4 h-4 text-slate-300" />
-}

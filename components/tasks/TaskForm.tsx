@@ -1,7 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { taskSchema, type TaskInput } from '@/lib/validations/task.schema'
 import { Button } from '@/components/ui/button'
@@ -12,12 +12,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ActionResult } from '@/lib/actions/tasks.actions'
 
 interface Option { id: string; label: string }
+/** Deal-Option mit Kontext-IDs für Auto-Fill bei Auswahl */
+interface DealOption extends Option {
+  companyId?: string | null
+  contactId?: string | null
+}
 
 interface TaskFormProps {
   defaultValues?: Partial<TaskInput>
   onSubmit: (data: TaskInput) => Promise<ActionResult>
   title: string
-  deals?: Option[]
+  deals?: DealOption[]
   contacts?: Option[]
   companies?: Option[]
 }
@@ -34,7 +39,7 @@ export function TaskForm({
   const [isPending, setIsPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<TaskInput>({
+  const { register, control, setValue, handleSubmit, formState: { errors } } = useForm<TaskInput>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(taskSchema) as any,
     defaultValues: {
@@ -43,6 +48,16 @@ export function TaskForm({
       ...defaultValues,
     },
   })
+
+  // Auto-Fill Firma/Kontakt bei Deal-Auswahl
+  const watchedDealId = useWatch({ control, name: 'dealId' })
+  useEffect(() => {
+    if (!watchedDealId) return
+    const deal = deals.find((d) => d.id === watchedDealId)
+    if (!deal) return
+    if (deal.companyId) setValue('companyId', deal.companyId, { shouldDirty: true })
+    if (deal.contactId) setValue('contactId', deal.contactId, { shouldDirty: true })
+  }, [watchedDealId, deals, setValue])
 
   async function submit(data: TaskInput) {
     setServerError(null)

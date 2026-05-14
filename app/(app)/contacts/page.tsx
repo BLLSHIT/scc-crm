@@ -5,8 +5,8 @@ import { getContacts } from '@/lib/db/contacts'
 import { Header } from '@/components/layout/Header'
 import { SearchBar } from '@/components/layout/SearchBar'
 import { buttonVariants } from '@/components/ui/button'
-import { Plus, Mail, Phone } from 'lucide-react'
-import { formatDate } from '@/lib/utils/format'
+import { Plus } from 'lucide-react'
+import { ContactsTable } from '@/components/contacts/ContactsTable'
 import type { Profile } from '@/types/app.types'
 
 export default async function ContactsPage({
@@ -40,68 +40,7 @@ export default async function ContactsPage({
       />
       <main className="p-6 space-y-4">
         <SearchBar placeholder="Kontakte durchsuchen…" />
-        <div className="bg-white rounded-xl border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Firma</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Position</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Kontakt</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Erstellt</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {contacts.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
-                    Noch keine Kontakte.{' '}
-                    <Link href="/contacts/new" className="text-blue-600 hover:underline">
-                      Ersten Kontakt anlegen
-                    </Link>
-                  </td>
-                </tr>
-              )}
-              {contacts.map((c: any) => (
-                <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/contacts/${c.id}`}
-                      className="font-medium text-slate-900 hover:text-blue-600"
-                    >
-                      {c.firstName} {c.lastName}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{c.company?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-600">{c.position ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {c.email && (
-                        <a
-                          href={`mailto:${c.email}`}
-                          className="text-slate-400 hover:text-blue-600"
-                          title={c.email}
-                        >
-                          <Mail className="w-4 h-4" />
-                        </a>
-                      )}
-                      {c.phone && (
-                        <a
-                          href={`tel:${c.phone}`}
-                          className="text-slate-400 hover:text-slate-700"
-                          title={c.phone}
-                        >
-                          <Phone className="w-4 h-4" />
-                        </a>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">{formatDate(c.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ContactsTable contacts={contacts} />
       </main>
     </div>
   )
