@@ -90,14 +90,7 @@ export function QuoteRowActions({
     )
   }
 
-  function openPrintDialog(e: React.MouseEvent) {
-    e.preventDefault()
-    window.open(
-      `/quotes/${quoteId}/preview?print=1`,
-      `quote-${quoteId}-print`,
-      'width=960,height=1100,scrollbars=yes'
-    )
-  }
+  // Download = direkter <a download> Aufruf auf den PDF-Endpoint, kein Handler nötig
 
   const mailto =
     recipientEmail
@@ -122,9 +115,9 @@ export function QuoteRowActions({
         <Eye className="w-4 h-4" />
       </a>
       <a
-        href={`/quotes/${quoteId}/preview?print=1`}
-        onClick={openPrintDialog}
-        title="Als PDF speichern"
+        href={`/api/quotes/${quoteId}/pdf`}
+        download
+        title="Als PDF herunterladen"
         className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
       >
         <Download className="w-4 h-4" />

@@ -8,7 +8,7 @@ import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { QuoteStatusActions } from '@/components/quotes/QuoteStatusActions'
-import { Pencil, Trash2, Building2, User, UserCheck, Mail, Phone, FileText, Eye } from 'lucide-react'
+import { Pencil, Trash2, Building2, User, UserCheck, Mail, Phone, FileText, Eye, Download } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { calcLine } from '@/lib/utils/line-items'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
@@ -76,11 +76,19 @@ export default async function QuoteDetailPage({
               <Link
                 href={`/quotes/${id}/preview`}
                 target="_blank"
-                className={buttonVariants({ size: 'sm' })}
+                className={buttonVariants({ size: 'sm', variant: 'outline' })}
               >
                 <Eye className="w-4 h-4 mr-2" />
                 Vorschau
               </Link>
+              <a
+                href={`/api/quotes/${id}/pdf`}
+                download
+                className={buttonVariants({ size: 'sm' })}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                PDF
+              </a>
               <Link
                 href={`/quotes/${id}/edit`}
                 className={buttonVariants({ size: 'sm', variant: 'outline' })}

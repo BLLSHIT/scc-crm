@@ -106,12 +106,15 @@ export default async function QuotePreviewPage({
               Vorschau — Angebot {quote.quoteNumber}
             </p>
             <div className="flex gap-2">
+              <a
+                href={`/api/quotes/${id}/pdf`}
+                download
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                PDF herunterladen
+              </a>
               <PrintButton />
             </div>
-          </div>
-          <div className="max-w-[820px] mx-auto px-6 pb-3 text-xs text-amber-700">
-            ⓘ Im Druckdialog: <strong>„Kopf- und Fußzeilen"</strong> deaktivieren,
-            damit Datum/URL nicht erscheinen.
           </div>
         </div>
 
