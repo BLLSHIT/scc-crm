@@ -116,6 +116,17 @@ export async function updateProjectStatus(id: string, newStatus: ProjectStatus):
   if (newStatus === 'completed') patch.actualEndDate = new Date().toISOString()
   const { error } = await supabase.from('projects').update(patch).eq('id', id)
   if (error) return { error: { _form: [error.message] } }
+  try {
+    await logActivity({
+      entityType: 'project',
+      entityId: id,
+      action: 'status_changed',
+      summary: `Status → ${newStatus}`,
+      metadata: { newStatus },
+    })
+  } catch (logErr) {
+    console.warn('[updateProjectStatus] logActivity failed:', logErr)
+  }
   revalidatePath('/projects')
   revalidatePath(`/projects/${id}`)
   return {}

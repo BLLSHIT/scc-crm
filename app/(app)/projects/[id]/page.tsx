@@ -14,6 +14,7 @@ import { MaterialChecklistCard } from '@/components/projects/MaterialChecklistCa
 import { ProjectPhotoGallery } from '@/components/projects/ProjectPhotoGallery'
 import { ProjectAttachmentsCard } from '@/components/projects/ProjectAttachmentsCard'
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
+import { NoteComposer } from '@/components/activity/NoteComposer'
 import { ShareLinkPanel } from '@/components/projects/ShareLinkPanel'
 import { Pencil, Building2, User, UserCheck, Mail, Phone, FileText, MapPin, Receipt, HardHat, Download, Send } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
@@ -40,6 +41,7 @@ export default async function ProjectDetailPage({
 }) {
   const { id } = await params
   let profile: Profile | null = null
+  let currentUserId: string | null = null
   let project: any
   let attachments: any[] = []
   let dealAttachments: any[] = []
@@ -52,10 +54,18 @@ export default async function ProjectDetailPage({
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError) throw authError
     if (!user) redirect('/login')
+    currentUserId = user?.id ?? null
     const profileResult = await supabase
       .from('profiles').select('*').eq('id', user.id).single()
     profile = (profileResult.data as Profile) ?? null
     project = await getProjectById(id)
+    if (!project) {
+      return (
+        <div className="flex-1 p-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-6">Projekt nicht gefunden.</div>
+        </div>
+      )
+    }
     attachments = await getProjectAttachments(id)
     // Deal-Dateien für gemeinsamen Datei-Pool
     if (project.dealId) {
@@ -66,8 +76,8 @@ export default async function ProjectDetailPage({
         .order('createdAt', { ascending: false })
       dealAttachments = da ?? []
     }
-    // Activity-Logs aus deal-context (geteilt)
-    activities = project.dealId ? await getActivityLogs('deal', project.dealId, 20) : []
+    // Activity-Logs für dieses Projekt
+    activities = await getActivityLogs('project', id, 30)
 
     // Tasks für dieses Projekt
     const { data: tasks } = await supabase
@@ -90,14 +100,6 @@ export default async function ProjectDetailPage({
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Projekt laden" err={err} />
-  }
-
-  if (!project) {
-    return (
-      <div className="flex-1 p-6">
-        <div className="rounded-xl border border-slate-200 bg-white p-6">Projekt nicht gefunden.</div>
-      </div>
-    )
   }
 
   const status = project.status as ProjectStatus
@@ -227,7 +229,7 @@ export default async function ProjectDetailPage({
             <ProjectAttachmentsCard projectId={id} initialAttachments={attachments} dealAttachments={dealAttachments} />
 
             <ProjectPhotoGallery
-              photos={attachments.filter((a: any) => (a.mimeType as string).startsWith('image/'))}
+              photos={attachments.filter((a: any) => a.mimeType?.startsWith('image/'))}
             />
 
             <Card>
@@ -385,7 +387,8 @@ export default async function ProjectDetailPage({
 
             <ShareLinkPanel projectId={id} currentToken={project.shareToken ?? null} />
 
-            <ActivityTimeline items={activities} />
+            <NoteComposer entityType="project" entityId={id} />
+            <ActivityTimeline items={activities} currentUserId={currentUserId ?? undefined} />
           </div>
         </main>
       </div>
