@@ -273,7 +273,7 @@ export async function submitRemoteApproval(
     remoteApprovedAt: new Date().toISOString(),
     remoteApprovedByName: approverName.trim(),
     updatedAt: new Date().toISOString(),
-  }).eq('remoteApprovalToken', token)
+  }).eq('remoteApprovalToken', token).is('remoteApprovedAt', null)
   if (error) return { error: error.message }
   return {}
 }

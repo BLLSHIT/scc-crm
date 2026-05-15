@@ -39,6 +39,7 @@ export default async function ProtocolPage({
           projectId={projectId}
           teamMembers={tmRes.data ?? []}
           buildTeams={buildTeams}
+          currentUserId={user.id}
         />
       </main>
     </div>

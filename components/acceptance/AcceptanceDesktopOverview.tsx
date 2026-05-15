@@ -13,12 +13,12 @@ import type { AcceptanceProtocol, AcceptancePhase } from '@/lib/db/acceptance-pr
 interface Props {
   protocol: AcceptanceProtocol
   projectId: string
-  onTabletMode: () => void
+  onTabletMode: (phaseId?: string) => void
 }
 
 const PRIORITY_LABEL = { low: 'leicht', medium: 'mittel', critical: 'kritisch' }
 
-function PhaseCard({ phase, projectId, onTabletMode }: { phase: AcceptancePhase; projectId: string; onTabletMode: () => void }) {
+function PhaseCard({ phase, projectId, onTabletMode }: { phase: AcceptancePhase; projectId: string; onTabletMode: (phaseId?: string) => void }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [copySuccess, setCopySuccess] = useState(false)
@@ -92,7 +92,7 @@ function PhaseCard({ phase, projectId, onTabletMode }: { phase: AcceptancePhase;
         </div>
         <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
           {!isComplete && (
-            <Button size="sm" variant="outline" onClick={onTabletMode} className="text-xs">
+            <Button size="sm" variant="outline" onClick={() => onTabletMode(phase.id)} className="text-xs">
               <Tablet className="w-3 h-3 mr-1" /> Ausfüllen
             </Button>
           )}
@@ -154,7 +154,7 @@ export function AcceptanceDesktopOverview({ protocol, projectId, onTabletMode }:
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold text-slate-900">Abnahmeprotokoll</h2>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={onTabletMode}>
+          <Button size="sm" variant="outline" onClick={() => onTabletMode()}>
             <Tablet className="w-4 h-4 mr-2" /> Tablet-Modus
           </Button>
           <Link

@@ -12,10 +12,12 @@ interface Props {
   projectId: string
   teamMembers: TeamOption[]
   buildTeams: BuildTeamOption[]
+  currentUserId?: string
 }
 
-export function ProtocolModeWrapper({ protocol, projectId, teamMembers, buildTeams }: Props) {
+export function ProtocolModeWrapper({ protocol, projectId, teamMembers, buildTeams, currentUserId }: Props) {
   const [tabletMode, setTabletMode] = useState(false)
+  const [initialPhaseId, setInitialPhaseId] = useState<string | undefined>(undefined)
 
   if (tabletMode) {
     return (
@@ -33,6 +35,8 @@ export function ProtocolModeWrapper({ protocol, projectId, teamMembers, buildTea
           projectId={projectId}
           teamMembers={teamMembers}
           buildTeams={buildTeams}
+          currentUserId={currentUserId}
+          initialPhaseId={initialPhaseId}
         />
       </div>
     )
@@ -42,7 +46,7 @@ export function ProtocolModeWrapper({ protocol, projectId, teamMembers, buildTea
     <AcceptanceDesktopOverview
       protocol={protocol}
       projectId={projectId}
-      onTabletMode={() => setTabletMode(true)}
+      onTabletMode={(phaseId?: string) => { setInitialPhaseId(phaseId); setTabletMode(true) }}
     />
   )
 }

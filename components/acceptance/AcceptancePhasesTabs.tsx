@@ -19,12 +19,15 @@ interface Props {
   teamMembers: TeamOption[]
   buildTeams: BuildTeamOption[]
   currentUserId?: string
+  initialPhaseId?: string
 }
 
-export function AcceptancePhasesTabs({ protocol, projectId, teamMembers, buildTeams, currentUserId }: Props) {
+export function AcceptancePhasesTabs({ protocol, projectId, teamMembers, buildTeams, currentUserId, initialPhaseId }: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
-  const [activePhaseId, setActivePhaseId] = useState<string>(protocol.phases[0]?.id ?? '')
+  const [activePhaseId, setActivePhaseId] = useState<string>(
+    initialPhaseId ?? protocol.phases[0]?.id ?? ''
+  )
   const [editingItem, setEditingItem] = useState<AcceptanceItem | null>(null)
   const [showAddItem, setShowAddItem] = useState(false)
   const [newItemTitle, setNewItemTitle] = useState('')
@@ -127,13 +130,15 @@ export function AcceptancePhasesTabs({ protocol, projectId, teamMembers, buildTe
             ✅ Phase abgeschlossen am {new Date(activePhase.completedAt).toLocaleDateString('de-DE')}
           </div>
         )}
-        {activePhase?.items.map((item) => (
-          <AcceptanceItemCard
-            key={item.id}
-            item={item}
-            onEdit={(i) => setEditingItem(i)}
-          />
-        ))}
+        <div className={activePhase?.completedAt ? 'opacity-60 pointer-events-none' : ''}>
+          {activePhase?.items.map((item) => (
+            <AcceptanceItemCard
+              key={item.id}
+              item={item}
+              onEdit={(i) => setEditingItem(i)}
+            />
+          ))}
+        </div>
         {activePhase?.items.length === 0 && !activePhase.completedAt && (
           <p className="text-sm text-slate-400 text-center py-8">Noch keine Prüfpunkte. Füge einen hinzu.</p>
         )}
