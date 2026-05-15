@@ -41,21 +41,25 @@ async function getApprovalData(token: string) {
 
   const itemsWithPhotos = await Promise.all(
     (items ?? []).map(async (item: any) => {
-      const { data: photos } = await admin
-        .from('acceptance_item_photos')
-        .select('*')
-        .eq('itemId', item.id)
+      try {
+        const { data: photos } = await admin
+          .from('acceptance_item_photos')
+          .select('*')
+          .eq('itemId', item.id)
 
-      // Generate signed URLs
-      const photosWithUrls = await Promise.all(
-        (photos ?? []).map(async (photo: any) => {
-          const { data: signed } = await admin.storage
-            .from('project-attachments')
-            .createSignedUrl(photo.storagePath, 3600)
-          return { ...photo, signedUrl: signed?.signedUrl ?? null }
-        })
-      )
-      return { ...item, photos: photosWithUrls }
+        // Generate signed URLs
+        const photosWithUrls = await Promise.all(
+          (photos ?? []).map(async (photo: any) => {
+            const { data: signed } = await admin.storage
+              .from('project-attachments')
+              .createSignedUrl(photo.storagePath, 86400)
+            return { ...photo, signedUrl: signed?.signedUrl ?? null }
+          })
+        )
+        return { ...item, photos: photosWithUrls }
+      } catch {
+        return { ...item, photos: [] }
+      }
     })
   )
 
