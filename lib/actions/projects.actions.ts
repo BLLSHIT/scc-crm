@@ -59,6 +59,8 @@ export async function createProject(input: ProjectInput): Promise<ActionResult> 
   const parsed = projectSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const id = randomUUID()
   const { error } = await supabase.from('projects').insert({
     id,
@@ -83,6 +85,8 @@ export async function createProject(input: ProjectInput): Promise<ActionResult> 
 
 export async function insertDefaultMilestones(projectId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   await insertDefaultMilestonesForProject(supabase, projectId)
   revalidatePath(`/projects/${projectId}`)
   return {}
@@ -92,6 +96,8 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Ac
   const parsed = projectSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { error } = await supabase
     .from('projects')
     .update({ ...clean(parsed.data), updatedAt: new Date().toISOString() })
@@ -104,6 +110,8 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Ac
 
 export async function deleteProject(id: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { error } = await supabase.from('projects').delete().eq('id', id)
   if (error) return { error: { _form: [error.message] } }
   revalidatePath('/projects')
@@ -112,6 +120,8 @@ export async function deleteProject(id: string): Promise<ActionResult> {
 
 export async function updateProjectStatus(id: string, newStatus: ProjectStatus): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const patch: Record<string, unknown> = { status: newStatus, updatedAt: new Date().toISOString() }
   if (newStatus === 'completed') patch.actualEndDate = new Date().toISOString()
   const { error } = await supabase.from('projects').update(patch).eq('id', id)
@@ -138,6 +148,8 @@ export async function updateProjectStatus(id: string, newStatus: ProjectStatus):
  */
 export async function convertDealToProject(dealId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: deal, error: dErr } = await supabase
     .from('deals')
     .select('id, title, companyId, ownerId, teamMemberId, description')
@@ -199,6 +211,8 @@ export async function addMilestone(projectId: string, input: MilestoneInput): Pr
   const parsed = milestoneSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
 
   // sortOrder ans Ende
   const { data: existing } = await supabase
@@ -222,6 +236,8 @@ export async function addMilestone(projectId: string, input: MilestoneInput): Pr
 
 export async function toggleMilestone(milestoneId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: row } = await supabase
     .from('project_milestones').select('id, projectId, completedAt').eq('id', milestoneId).single()
   if (!row) return { error: { _form: ['Meilenstein nicht gefunden.'] } }
@@ -237,6 +253,8 @@ export async function toggleMilestone(milestoneId: string): Promise<ActionResult
 
 export async function deleteMilestone(milestoneId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: row } = await supabase
     .from('project_milestones').select('projectId').eq('id', milestoneId).single()
   const { error } = await supabase.from('project_milestones').delete().eq('id', milestoneId)
@@ -260,12 +278,11 @@ export async function recordProjectAttachment(input: {
   }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Nicht autorisiert.' }
   let userName: string | null = null
-  if (user) {
-    const { data: p } = await supabase.from('profiles')
-      .select('firstName, lastName, email').eq('id', user.id).single()
-    if (p) userName = `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || p.email
-  }
+  const { data: p } = await supabase.from('profiles')
+    .select('firstName, lastName, email').eq('id', user.id).single()
+  if (p) userName = `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || p.email
   const id = randomUUID()
   const { error } = await supabase.from('project_attachments').insert({
     id,
@@ -275,7 +292,7 @@ export async function recordProjectAttachment(input: {
     fileSize: input.fileSize,
     mimeType: input.mimeType,
     category: input.category,
-    uploadedBy: user?.id ?? null,
+    uploadedBy: user.id,
     uploadedByName: userName,
   })
   if (error) return { error: error.message }
@@ -290,6 +307,8 @@ export async function recordProjectAttachment(input: {
 
 export async function deleteProjectAttachment(id: string): Promise<{ error?: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Nicht autorisiert.' }
   const { data: row } = await supabase
     .from('project_attachments').select('id, projectId, filename, storagePath').eq('id', id).single()
   if (!row) return { error: 'Anhang nicht gefunden.' }
@@ -304,6 +323,8 @@ export async function deleteProjectAttachment(id: string): Promise<{ error?: str
 
 export async function generateShareToken(projectId: string): Promise<{ token?: string; error?: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Nicht autorisiert.' }
   const token = randomUUID()
   const { error } = await supabase.from('projects')
     .update({ shareToken: token, updatedAt: new Date().toISOString() })
@@ -315,6 +336,8 @@ export async function generateShareToken(projectId: string): Promise<{ token?: s
 
 export async function revokeShareToken(projectId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { error } = await supabase.from('projects')
     .update({ shareToken: null, updatedAt: new Date().toISOString() })
     .eq('id', projectId)
@@ -329,6 +352,8 @@ export async function addPunchItem(projectId: string, input: PunchItemInput): Pr
   const parsed = punchItemSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: existing } = await supabase
     .from('project_punch_items').select('sortOrder').eq('projectId', projectId)
     .order('sortOrder', { ascending: false }).limit(1)
@@ -347,6 +372,8 @@ export async function addPunchItem(projectId: string, input: PunchItemInput): Pr
 
 export async function togglePunchItem(itemId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: row } = await supabase
     .from('project_punch_items').select('id, projectId, isDone').eq('id', itemId).single()
   if (!row) return { error: { _form: ['Eintrag nicht gefunden.'] } }
@@ -363,6 +390,8 @@ export async function togglePunchItem(itemId: string): Promise<ActionResult> {
 
 export async function deletePunchItem(itemId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: row } = await supabase
     .from('project_punch_items').select('projectId').eq('id', itemId).single()
   const { error } = await supabase.from('project_punch_items').delete().eq('id', itemId)
@@ -373,6 +402,8 @@ export async function deletePunchItem(itemId: string): Promise<ActionResult> {
 
 export async function insertDefaultPunchItems(projectId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const defaults = [
     'Netz korrekt gespannt?',
     'Beleuchtung vollständig getestet?',
@@ -401,6 +432,8 @@ export async function addMaterialItem(projectId: string, input: MaterialItemInpu
   const parsed = materialItemSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: existing } = await supabase
     .from('project_material_items').select('sortOrder').eq('projectId', projectId)
     .order('sortOrder', { ascending: false }).limit(1)
@@ -422,6 +455,8 @@ export async function addMaterialItem(projectId: string, input: MaterialItemInpu
 
 export async function toggleMaterialOrdered(itemId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: row } = await supabase
     .from('project_material_items').select('projectId, isOrdered').eq('id', itemId).single()
   if (!row) return { error: { _form: ['Eintrag nicht gefunden.'] } }
@@ -436,6 +471,8 @@ export async function toggleMaterialOrdered(itemId: string): Promise<ActionResul
 
 export async function toggleMaterialArrived(itemId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: row } = await supabase
     .from('project_material_items').select('projectId, isArrived').eq('id', itemId).single()
   if (!row) return { error: { _form: ['Eintrag nicht gefunden.'] } }
@@ -450,6 +487,8 @@ export async function toggleMaterialArrived(itemId: string): Promise<ActionResul
 
 export async function deleteMaterialItem(itemId: string): Promise<ActionResult> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { data: row } = await supabase
     .from('project_material_items').select('projectId').eq('id', itemId).single()
   const { error } = await supabase.from('project_material_items').delete().eq('id', itemId)
