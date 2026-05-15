@@ -5,22 +5,37 @@ import { BRAND } from '@/lib/brand'
 
 function substitute(text: string | null | undefined, invoice: any): string {
   if (!text) return ''
+  const contactName = invoice.contact
+    ? `${invoice.contact.firstName} ${invoice.contact.lastName}`.trim()
+    : ''
+  const sccName = invoice.teamMember
+    ? `${invoice.teamMember.firstName} ${invoice.teamMember.lastName}`.trim()
+    : ''
   const subs: Record<string, string> = {
     'kunde.firma': invoice.company?.name ?? '',
     'kunde.anrede': '',
     'kunde.vorname': invoice.contact?.firstName ?? '',
     'kunde.nachname': invoice.contact?.lastName ?? '',
+    'kunde.name': contactName,
     'kunde.email': invoice.contact?.email ?? invoice.company?.email ?? '',
     'kunde.adresse': [invoice.company?.city, invoice.company?.country].filter(Boolean).join(', '),
+    firma: invoice.company?.name ?? '',
+    vorname: invoice.contact?.firstName ?? '',
+    nachname: invoice.contact?.lastName ?? '',
+    name: contactName,
     datum: formatDate(invoice.issueDate),
     'rechnung.nummer': invoice.invoiceNumber ?? '',
     'rechnung.faellig': invoice.dueDate ? formatDate(invoice.dueDate) : '',
-    'scc.name': invoice.teamMember ? `${invoice.teamMember.firstName} ${invoice.teamMember.lastName}` : '',
+    rechnungsnummer: invoice.invoiceNumber ?? '',
+    faellig: invoice.dueDate ? formatDate(invoice.dueDate) : '',
+    'scc.name': sccName,
     'scc.email': invoice.teamMember?.email ?? '',
     'scc.mobil': invoice.teamMember?.mobile ?? '',
     'scc.position': invoice.teamMember?.position ?? '',
+    sccname: sccName,
   }
-  return text.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => subs[key] ?? `{{${key}}}`)
+  return text.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) =>
+    subs[key.toLowerCase()] ?? `{{${key}}}`)
 }
 
 function formatMoney(n: number, currency = 'EUR'): string {
@@ -44,7 +59,7 @@ const s = StyleSheet.create({
   },
   letterhead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   logo: { height: 44, marginBottom: 6 },
-  companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#036147' },
+  companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#1e293b' },
   metaSmall: { fontSize: 8, color: '#475569' },
 
   blocks: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 },
@@ -55,13 +70,13 @@ const s = StyleSheet.create({
   metaVal: { fontFamily: 'Helvetica-Bold', minWidth: 90, textAlign: 'right' },
   metaSep: { borderTopWidth: 1, borderTopColor: '#cbd5e1', marginTop: 4, paddingTop: 4 },
 
-  h1: { fontFamily: 'Helvetica-Bold', fontSize: 14, marginBottom: 10, color: '#036147' },
+  h1: { fontFamily: 'Helvetica-Bold', fontSize: 14, marginBottom: 10, color: '#1e293b' },
   para: { marginBottom: 8 },
 
   table: { marginTop: 10 },
   trHead: {
-    flexDirection: 'row', borderBottomWidth: 1, borderTopWidth: 2, borderColor: '#036147',
-    paddingVertical: 5, fontFamily: 'Helvetica-Bold', color: '#036147',
+    flexDirection: 'row', borderBottomWidth: 1, borderTopWidth: 2, borderColor: '#1e293b',
+    paddingVertical: 5, fontFamily: 'Helvetica-Bold', color: '#1e293b',
   },
   tr: { flexDirection: 'row', borderBottomWidth: 0.5, borderColor: '#e2e8f0', paddingVertical: 5 },
   trText: {
@@ -88,8 +103,8 @@ const s = StyleSheet.create({
   totalsValue: { textAlign: 'right' },
   totalsFinal: {
     flexDirection: 'row', justifyContent: 'space-between',
-    paddingTop: 6, marginTop: 4, borderTopWidth: 2, borderColor: '#036147',
-    fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#036147',
+    paddingTop: 6, marginTop: 4, borderTopWidth: 2, borderColor: '#1e293b',
+    fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#1e293b',
   },
   paidNote: {
     marginTop: 6, padding: 4, backgroundColor: '#ecfdf5',

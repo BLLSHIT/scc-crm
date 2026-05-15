@@ -6,24 +6,41 @@ import { BRAND } from '@/lib/brand'
 // ── Substitution für Platzhalter in Texten ─────────────────────────────
 function substitute(text: string | null | undefined, quote: any): string {
   if (!text) return ''
+  const contactName = quote.contact
+    ? `${quote.contact.firstName} ${quote.contact.lastName}`.trim()
+    : ''
+  const sccName = quote.teamMember
+    ? `${quote.teamMember.firstName} ${quote.teamMember.lastName}`.trim()
+    : ''
   const subs: Record<string, string> = {
+    // Kunden-Daten
     'kunde.firma': quote.company?.name ?? '',
     'kunde.anrede': '',
     'kunde.vorname': quote.contact?.firstName ?? '',
     'kunde.nachname': quote.contact?.lastName ?? '',
+    'kunde.name': contactName,
     'kunde.email': quote.contact?.email ?? quote.company?.email ?? '',
     'kunde.adresse': [quote.company?.city, quote.company?.country].filter(Boolean).join(', '),
+    // Kurzformen
+    firma: quote.company?.name ?? '',
+    vorname: quote.contact?.firstName ?? '',
+    nachname: quote.contact?.lastName ?? '',
+    name: contactName,
+    // Angebot
     datum: formatDate(quote.createdAt),
     'angebot.nummer': quote.quoteNumber ?? '',
     'angebot.gueltig_bis': quote.validUntil ? formatDate(quote.validUntil) : '',
-    'scc.name': quote.teamMember
-      ? `${quote.teamMember.firstName} ${quote.teamMember.lastName}`
-      : '',
+    angebotsnummer: quote.quoteNumber ?? '',
+    gueltig_bis: quote.validUntil ? formatDate(quote.validUntil) : '',
+    // SCC
+    'scc.name': sccName,
     'scc.email': quote.teamMember?.email ?? '',
     'scc.mobil': quote.teamMember?.mobile ?? '',
     'scc.position': quote.teamMember?.position ?? '',
+    sccname: sccName,
   }
-  return text.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => subs[key] ?? `{{${key}}}`)
+  return text.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) =>
+    subs[key.toLowerCase()] ?? `{{${key}}}`)
 }
 
 function formatMoney(n: number, currency = 'EUR'): string {
@@ -56,7 +73,7 @@ const s = StyleSheet.create({
   // Letterhead
   letterhead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   logo: { height: 44, marginBottom: 6 },
-  companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#036147' },
+  companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#1e293b' },
   metaSmall: { fontSize: 8, color: '#475569' },
 
   // Recipient + Meta
@@ -75,7 +92,7 @@ const s = StyleSheet.create({
   metaSep: { borderTopWidth: 1, borderTopColor: '#cbd5e1', marginTop: 4, paddingTop: 4 },
 
   // Titel
-  h1: { fontFamily: 'Helvetica-Bold', fontSize: 14, marginBottom: 10, color: '#036147' },
+  h1: { fontFamily: 'Helvetica-Bold', fontSize: 14, marginBottom: 10, color: '#1e293b' },
 
   // Texte
   para: { marginBottom: 8 },
@@ -86,10 +103,10 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderTopWidth: 2,
-    borderColor: '#036147',
+    borderColor: '#1e293b',
     paddingVertical: 5,
     fontFamily: 'Helvetica-Bold',
-    color: '#036147',
+    color: '#1e293b',
   },
   tr: {
     flexDirection: 'row',
@@ -132,10 +149,10 @@ const s = StyleSheet.create({
     paddingTop: 6,
     marginTop: 4,
     borderTopWidth: 2,
-    borderColor: '#036147',
+    borderColor: '#1e293b',
     fontFamily: 'Helvetica-Bold',
     fontSize: 11,
-    color: '#036147',
+    color: '#1e293b',
   },
 
   // Signatur

@@ -23,7 +23,7 @@ export function InvoiceRowActions({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
-  const [direction, setDirection] = useState<'down' | 'up'>('down')
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0, openUp: false })
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [, startTransition] = useTransition()
@@ -48,7 +48,12 @@ export function InvoiceRowActions({
     if (!open && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       const spaceBelow = window.innerHeight - rect.bottom
-      setDirection(spaceBelow < 260 ? 'up' : 'down')
+      const openUp = spaceBelow < 260
+      setDropdownPos({
+        top: openUp ? rect.top - 4 : rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+        openUp,
+      })
     }
     setOpen((v) => !v)
   }
@@ -101,9 +106,15 @@ export function InvoiceRowActions({
           <MoreVertical className="w-4 h-4" />
         </button>
         {open && (
-          <div className={`absolute right-0 w-60 bg-white border border-slate-200 rounded-lg shadow-lg z-30 py-1 text-sm ${
-            direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'
-          }`}>
+          <div
+            style={{
+              position: 'fixed',
+              top: dropdownPos.openUp ? undefined : dropdownPos.top,
+              bottom: dropdownPos.openUp ? window.innerHeight - dropdownPos.top : undefined,
+              right: dropdownPos.right,
+            }}
+            className="w-60 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1 text-sm"
+          >
             {currentStatus === 'draft' && (
               <button type="button" onClick={() => changeStatus('open')}
                 className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2">
