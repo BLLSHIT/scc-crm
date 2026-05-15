@@ -15,8 +15,16 @@ import {
   CheckCircle2,
   Lock,
   BarChart3,
+  Plus,
+  Pencil,
+  Trash2,
+  ArrowRight,
+  Paperclip,
+  MessageSquare,
+  Activity,
 } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils/format'
+import { formatCurrency, formatDate, formatRelative } from '@/lib/utils/format'
+import { getRecentActivity, type FeedItem } from '@/lib/db/activity-logs'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
 
@@ -48,6 +56,7 @@ export default async function DashboardPage({
   let isAdmin = false
   let marginDeals: { id: string; title: string; company: string; umsatz: number; marginPercent: number }[] = []
   let avgMarginPercent: number | null = null
+  let recentFeed: FeedItem[] = []
 
   try {
     const supabase = await createClient()
@@ -227,6 +236,7 @@ export default async function DashboardPage({
       marginDeals = rawMargins.sort((a, b) => b.umsatz - a.umsatz).slice(0, 15)
       avgMarginPercent = totalUmsatz > 0 ? Math.round(totalWeightedMargin / totalUmsatz) : null
     }
+    recentFeed = await getRecentActivity(20)
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Dashboard" err={err} />
@@ -600,6 +610,24 @@ export default async function DashboardPage({
             </Card>
           </div>
         </div>
+        {/* Globaler Aktivitäts-Feed */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
+            <a href="#" className="text-xs text-blue-600 hover:underline">Alle →</a>
+          </CardHeader>
+          <CardContent>
+            {recentFeed.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-8">Noch keine Aktivitäten vorhanden.</p>
+            ) : (
+              <ul className="space-y-3">
+                {recentFeed.slice(0, 15).map((item) => (
+                  <FeedItemRow key={item.id} item={item} />
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   )
@@ -608,6 +636,58 @@ export default async function DashboardPage({
 // ───────────────────────────────────────────────
 // Helper-Komponenten
 // ───────────────────────────────────────────────
+
+const FEED_ICON: Record<string, any> = {
+  created:        Plus,
+  updated:        Pencil,
+  deleted:        Trash2,
+  status_changed: ArrowRight,
+  file_uploaded:  Paperclip,
+  file_deleted:   Trash2,
+  note_added:     MessageSquare,
+}
+const FEED_COLOR: Record<string, string> = {
+  created:        'text-blue-600 bg-blue-50',
+  updated:        'text-slate-600 bg-slate-100',
+  deleted:        'text-red-600 bg-red-50',
+  status_changed: 'text-violet-600 bg-violet-50',
+  file_uploaded:  'text-slate-600 bg-slate-100',
+  file_deleted:   'text-red-600 bg-red-50',
+  note_added:     'text-amber-600 bg-amber-50',
+}
+
+function FeedItemRow({ item }: { item: FeedItem }) {
+  const Icon = FEED_ICON[item.action] ?? Activity
+  const color = FEED_COLOR[item.action] ?? 'text-slate-500 bg-slate-100'
+  const entityPath = `/${item.entityType}s/${item.entityId}`
+  const summary = item.summary
+    ? item.summary.length > 80 ? item.summary.slice(0, 80) + '…' : item.summary
+    : null
+
+  return (
+    <li className="flex gap-3 text-sm">
+      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${color}`}>
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Link
+            href={entityPath}
+            className="font-medium text-blue-600 hover:underline truncate max-w-[140px]"
+          >
+            {item.entityLabel ?? item.entityType}
+          </Link>
+          {summary && (
+            <span className="text-slate-700 truncate">{summary}</span>
+          )}
+        </div>
+        <p className="text-xs text-slate-500 mt-0.5">
+          {item.userName ? `${item.userName} · ` : ''}{formatRelative(item.createdAt)}
+        </p>
+      </div>
+    </li>
+  )
+}
 
 function KpiCard({
   icon: Icon,
