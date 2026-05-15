@@ -24,6 +24,7 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
+  Zap,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getInitials } from '@/lib/utils/format'
@@ -73,8 +74,9 @@ const sections: NavSection[] = [
     icon: Settings,
     label: 'Einstellungen',
     items: [
-      { label: 'Allgemein',     href: '/settings',     icon: Settings },
-      { label: 'Team & Rollen', href: '/teams',        icon: UserCog },
+      { label: 'Allgemein',     href: '/settings',           icon: Settings },
+      { label: 'Workflows',     href: '/settings/workflows', icon: Zap },
+      { label: 'Team & Rollen', href: '/teams',               icon: UserCog },
     ],
   },
 ]
