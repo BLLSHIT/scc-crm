@@ -14,9 +14,10 @@ export async function getProjects(filters: ProjectFilters = {}) {
   let query = supabase
     .from('projects')
     .select(
-      `id, name, status, startDate, plannedEndDate, actualEndDate, locationCity, createdAt,
+      `id, name, status, startDate, plannedEndDate, actualEndDate, locationCity, buildTeamId, createdAt,
        company:companies(id, name),
        teamMember:team_members(id, firstName, lastName),
+       buildTeam:build_teams(id, name),
        deal:deals(id, title, value, currency)`
     )
     .order('createdAt', { ascending: false })
@@ -86,6 +87,28 @@ export async function getProjectMilestones(projectId: string) {
     .from('project_milestones').select('*').eq('projectId', projectId)
     .order('sortOrder', { ascending: true }).order('createdAt', { ascending: true })
   return data ?? []
+}
+
+export async function getProjectByShareToken(token: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('projects')
+    .select(
+      `id, name, status, startDate, plannedEndDate, locationCity, locationStreet, locationZip, locationCountry,
+       company:companies(id, name),
+       teamMember:team_members(id, firstName, lastName)`
+    )
+    .eq('shareToken', token)
+    .single()
+  if (error || !data) return null
+
+  const [milestonesRes, punchRes] = await Promise.all([
+    supabase.from('project_milestones').select('id, title, completedAt, sortOrder')
+      .eq('projectId', data.id).order('sortOrder', { ascending: true }),
+    supabase.from('project_punch_items').select('id, title, isDone, sortOrder')
+      .eq('projectId', data.id).order('sortOrder', { ascending: true }),
+  ])
+  return { ...data, milestones: milestonesRes.data ?? [], punchItems: punchRes.data ?? [] }
 }
 
 export async function getProjectAttachments(projectId: string) {

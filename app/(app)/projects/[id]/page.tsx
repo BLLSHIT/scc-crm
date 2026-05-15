@@ -14,7 +14,8 @@ import { MaterialChecklistCard } from '@/components/projects/MaterialChecklistCa
 import { ProjectPhotoGallery } from '@/components/projects/ProjectPhotoGallery'
 import { ProjectAttachmentsCard } from '@/components/projects/ProjectAttachmentsCard'
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
-import { Pencil, Building2, User, UserCheck, Mail, Phone, FileText, MapPin, Receipt, HardHat } from 'lucide-react'
+import { ShareLinkPanel } from '@/components/projects/ShareLinkPanel'
+import { Pencil, Building2, User, UserCheck, Mail, Phone, FileText, MapPin, Receipt, HardHat, Download, Send } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
@@ -108,10 +109,19 @@ export default async function ProjectDetailPage({
           title={project.name}
           profile={profile}
           actions={
-            <Link href={`/projects/${id}/edit`}
-              className={buttonVariants({ size: 'sm', variant: 'outline' })}>
-              <Pencil className="w-4 h-4 mr-2" />Bearbeiten
-            </Link>
+            <div className="flex items-center gap-2">
+              <a
+                href={`/api/projects/${id}/handover-pdf`}
+                download
+                className={buttonVariants({ size: 'sm', variant: 'outline' })}
+              >
+                <Download className="w-4 h-4 mr-2" />Übergabe-PDF
+              </a>
+              <Link href={`/projects/${id}/edit`}
+                className={buttonVariants({ size: 'sm', variant: 'outline' })}>
+                <Pencil className="w-4 h-4 mr-2" />Bearbeiten
+              </Link>
+            </div>
           }
         />
         <main className="p-6 grid grid-cols-3 gap-6">
@@ -350,6 +360,30 @@ export default async function ProjectDetailPage({
                 </CardContent>
               </Card>
             )}
+
+            {/* Status-Mail an Kunden */}
+            {project.contact?.email && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Send className="w-4 h-4 text-slate-400" />Status-Mail
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <a
+                    href={`mailto:${project.contact.email}?subject=${encodeURIComponent(`Projektupdate: ${project.name}`)}&body=${encodeURIComponent(
+                      `Guten Tag${project.contact ? ` ${project.contact.firstName} ${project.contact.lastName}` : ''},\n\nwir möchten Sie über den aktuellen Stand Ihres Projekts „${project.name}" informieren.\n\nAktueller Status: ${STATUS_LABEL[project.status as ProjectStatus]}\n\nBei Fragen stehen wir Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen\nIhr SCC Courts Team`
+                    )}`}
+                    className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    E-Mail an {project.contact.firstName} {project.contact.lastName}
+                  </a>
+                </CardContent>
+              </Card>
+            )}
+
+            <ShareLinkPanel projectId={id} currentToken={project.shareToken ?? null} />
 
             <ActivityTimeline items={activities} />
           </div>

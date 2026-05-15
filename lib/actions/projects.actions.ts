@@ -289,6 +289,29 @@ export async function deleteProjectAttachment(id: string): Promise<{ error?: str
   return {}
 }
 
+// ─── Share-Token ─────────────────────────────────────────────────────────────
+
+export async function generateShareToken(projectId: string): Promise<{ token?: string; error?: string }> {
+  const supabase = await createClient()
+  const token = randomUUID()
+  const { error } = await supabase.from('projects')
+    .update({ shareToken: token, updatedAt: new Date().toISOString() })
+    .eq('id', projectId)
+  if (error) return { error: error.message }
+  revalidatePath(`/projects/${projectId}`)
+  return { token }
+}
+
+export async function revokeShareToken(projectId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { error } = await supabase.from('projects')
+    .update({ shareToken: null, updatedAt: new Date().toISOString() })
+    .eq('id', projectId)
+  if (error) return { error: { _form: [error.message] } }
+  revalidatePath(`/projects/${projectId}`)
+  return {}
+}
+
 // ─── Punch-List (Abnahme-Checkliste) ────────────────────────────────────────
 
 export async function addPunchItem(projectId: string, input: PunchItemInput): Promise<ActionResult> {
