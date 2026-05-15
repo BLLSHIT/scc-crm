@@ -134,8 +134,7 @@ export async function importProductsCsv(csvText: string): Promise<CsvImportResul
     return cols.includes('name')
   })
   if (headerLineIdx === -1) {
-    const debugInfo = `delimiter="${delimiter}" | lines[0]="${lines[0]?.substring(0, 40)}" | lines[1]="${lines[1]?.substring(0, 40)}"`
-    return { imported: 0, updated: 0, skipped: 0, errors: [`Pflichtfeld "name" fehlt im CSV-Header. Debug: ${debugInfo}`] }
+    return { imported: 0, updated: 0, skipped: 0, errors: ['Pflichtfeld "name" fehlt im CSV-Header.'] }
   }
   const headers = parseCsvLine(lines[headerLineIdx], delimiter).map((h) => h.toLowerCase().trim())
   const colIdx = (name: string) => headers.indexOf(name)
