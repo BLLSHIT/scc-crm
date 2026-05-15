@@ -68,6 +68,7 @@ export default async function EditCompanyPage({
             email: company.email ?? '',
             linkedin: company.linkedin ?? '',
             instagram: company.instagram ?? '',
+            tier: company.tier ?? '',
             tags: company.tags ?? [],
           }}
           onSubmit={updateCompany.bind(null, id)}

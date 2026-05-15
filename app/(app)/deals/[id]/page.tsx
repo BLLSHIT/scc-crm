@@ -14,7 +14,7 @@ import { getProjectsByDealId } from '@/lib/db/projects'
 import { Header } from '@/components/layout/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Building2, Users, Pencil, Trash2, Calendar, UserCheck, Mail, Phone, FileText, Plus } from 'lucide-react'
+import { Building2, Users, Pencil, Trash2, Calendar, UserCheck, Mail, Phone, FileText, Plus, MapPin, Truck } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import type { Profile } from '@/types/app.types'
 
@@ -167,6 +167,30 @@ export default async function DealDetailPage({
                     <p className="flex items-center gap-1">
                       <Calendar className="w-4 h-4 text-slate-400" />
                       {formatDate(deal.expectedCloseAt)}
+                    </p>
+                  </div>
+                )}
+                {deal.plannedDelivery && (
+                  <div>
+                    <p className="text-slate-500 mb-1">Geplante Umsetzung</p>
+                    <p className="flex items-center gap-1">
+                      <Truck className="w-4 h-4 text-slate-400" />
+                      {formatDate(deal.plannedDelivery)}
+                    </p>
+                  </div>
+                )}
+                {(deal.locationCity || deal.locationStreet) && (
+                  <div>
+                    <p className="text-slate-500 mb-1">Standort der Anlage</p>
+                    <p className="flex items-start gap-1 text-sm">
+                      <MapPin className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                      <span>
+                        {deal.locationStreet && <>{deal.locationStreet}<br /></>}
+                        {(deal.locationZip || deal.locationCity) && (
+                          <>{[deal.locationZip, deal.locationCity].filter(Boolean).join(' ')}<br /></>
+                        )}
+                        {deal.locationCountry && <>{deal.locationCountry}</>}
+                      </span>
                     </p>
                   </div>
                 )}

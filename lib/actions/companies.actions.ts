@@ -28,6 +28,7 @@ export async function createCompany(input: CompanyInput): Promise<ActionResult> 
       email: parsed.data.email || null,
       linkedin: parsed.data.linkedin || null,
       instagram: parsed.data.instagram || null,
+      tier: parsed.data.tier || null,
       updatedAt: now,
     })
     .select('id')
@@ -67,6 +68,7 @@ export async function updateCompany(
       email: parsed.data.email || null,
       linkedin: parsed.data.linkedin || null,
       instagram: parsed.data.instagram || null,
+      tier: parsed.data.tier || null,
       updatedAt: new Date().toISOString(),
     })
     .eq('id', id)

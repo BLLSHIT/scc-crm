@@ -50,6 +50,11 @@ export async function createDeal(
       projectStatus: parsed.data.projectStatus && parsed.data.projectStatus !== 'none'
         ? parsed.data.projectStatus
         : null,
+      locationStreet: parsed.data.locationStreet || null,
+      locationZip: parsed.data.locationZip || null,
+      locationCity: parsed.data.locationCity || null,
+      locationCountry: parsed.data.locationCountry || null,
+      plannedDelivery: parsed.data.plannedDelivery || null,
       updatedAt: now,
     })
     .select('id')
@@ -123,6 +128,11 @@ export async function updateDeal(
       projectStatus: parsed.data.projectStatus && parsed.data.projectStatus !== 'none'
         ? parsed.data.projectStatus
         : null,
+      locationStreet: parsed.data.locationStreet || null,
+      locationZip: parsed.data.locationZip || null,
+      locationCity: parsed.data.locationCity || null,
+      locationCountry: parsed.data.locationCountry || null,
+      plannedDelivery: parsed.data.plannedDelivery || null,
       updatedAt: new Date().toISOString(),
     })
     .eq('id', id)

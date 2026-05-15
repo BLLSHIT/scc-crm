@@ -370,6 +370,21 @@ export function DealForm({
           </div>
 
           <div className="space-y-1.5">
+            <Label htmlFor="plannedDelivery">Geplante Umsetzung</Label>
+            <Input id="plannedDelivery" type="date" {...register('plannedDelivery')} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Standort der Anlage</Label>
+            <Input placeholder="Straße & Hausnummer" {...register('locationStreet')} />
+            <div className="grid grid-cols-3 gap-2">
+              <Input placeholder="PLZ" {...register('locationZip')} />
+              <Input placeholder="Stadt" className="col-span-2" {...register('locationCity')} />
+            </div>
+            <Input placeholder="Land (z.B. Deutschland)" {...register('locationCountry')} />
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="description">Beschreibung</Label>
             <Textarea id="description" {...register('description')} rows={3} />
           </div>

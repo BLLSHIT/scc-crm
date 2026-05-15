@@ -95,6 +95,13 @@ export default async function EditDealPage({
               ownerId: deal.ownerId ?? '',
               teamMemberId: deal.teamMemberId ?? '',
               projectStatus: deal.projectStatus ?? 'none',
+              locationStreet: deal.locationStreet ?? '',
+              locationZip: deal.locationZip ?? '',
+              locationCity: deal.locationCity ?? '',
+              locationCountry: deal.locationCountry ?? '',
+              plannedDelivery: deal.plannedDelivery
+                ? String(deal.plannedDelivery).slice(0, 10)
+                : '',
             }}
             onSubmit={updateDeal.bind(null, id)}
           />

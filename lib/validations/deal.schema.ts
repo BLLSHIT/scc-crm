@@ -22,6 +22,11 @@ export const dealSchema = z.object({
     'on_hold',
     'cancelled',
   ]).optional(),
+  locationStreet: z.string().optional(),
+  locationZip: z.string().optional(),
+  locationCity: z.string().optional(),
+  locationCountry: z.string().optional(),
+  plannedDelivery: z.string().optional(),
 })
 
 export type DealInput = z.infer<typeof dealSchema>

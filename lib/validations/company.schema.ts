@@ -11,6 +11,7 @@ export const companySchema = z.object({
   email: z.string().email('Ungültige E-Mail').optional().or(z.literal('')),
   linkedin: z.string().optional(),
   instagram: z.string().optional(),
+  tier: z.enum(['premium', 'key_account', 'standard']).optional().or(z.literal('')),
   tags: z.array(z.string()).default([]),
 })
 

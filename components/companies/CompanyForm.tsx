@@ -81,7 +81,7 @@ export function CompanyForm({ defaultValues, onSubmit, title, industries = [] }:
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="industry">Branche</Label>
               <select
@@ -93,6 +93,19 @@ export function CompanyForm({ defaultValues, onSubmit, title, industries = [] }:
                 {industries.map((o) => (
                   <option key={o.id} value={o.name}>{o.name}</option>
                 ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tier">Kunden-Tier</Label>
+              <select
+                id="tier"
+                {...register('tier')}
+                className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md"
+              >
+                <option value="">— Standard —</option>
+                <option value="premium">⭐ Premium</option>
+                <option value="key_account">🔑 Key Account</option>
+                <option value="standard">Standard</option>
               </select>
             </div>
             <div className="space-y-1.5">

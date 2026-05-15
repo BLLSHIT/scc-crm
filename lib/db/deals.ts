@@ -25,8 +25,9 @@ export async function getDealsForPipeline(pipelineId: string) {
         .from('deals')
         .select(
           `id, title, value, currency, probability, expectedCloseAt, stageId, createdAt,
+           locationCity, plannedDelivery,
            company:companies(id, name),
-           owner:profiles(id, firstName, lastName)`
+           teamMember:team_members(firstName, lastName)`
         )
         .eq('pipelineId', pipelineId)
         .order('createdAt', { ascending: false }),
@@ -35,7 +36,91 @@ export async function getDealsForPipeline(pipelineId: string) {
   if (stagesError) throw new Error(stagesError.message)
   if (dealsError) throw new Error(dealsError.message)
 
-  return { stages: stages ?? [], deals: deals ?? [] }
+  if (!deals || deals.length === 0) {
+    return { stages: stages ?? [], deals: [] }
+  }
+
+  const dealIds = deals.map((d) => d.id)
+
+  // Batch-fetch all related data in parallel
+  const [quotesRes, attachRes, tasksRes, contactsRes] = await Promise.all([
+    supabase
+      .from('quotes')
+      .select('dealId, status, totalGross, quote_line_items(quantity, product:products(purchasePriceNet))')
+      .in('dealId', dealIds),
+    supabase
+      .from('deal_attachments')
+      .select('dealId')
+      .in('dealId', dealIds),
+    supabase
+      .from('tasks')
+      .select('dealId, status')
+      .in('dealId', dealIds)
+      .not('status', 'eq', 'done'),
+    supabase
+      .from('deal_contacts')
+      .select('dealId, contact:contacts(firstName, lastName)')
+      .in('dealId', dealIds),
+  ])
+
+  // Build lookup maps
+  type QuoteRow = NonNullable<typeof quotesRes.data>[number]
+  const quotesByDeal = new Map<string, QuoteRow[]>()
+  for (const q of (quotesRes.data ?? [])) {
+    if (!quotesByDeal.has(q.dealId)) quotesByDeal.set(q.dealId, [])
+    quotesByDeal.get(q.dealId)!.push(q)
+  }
+
+  const attachCountByDeal = new Map<string, number>()
+  for (const a of (attachRes.data ?? [])) {
+    attachCountByDeal.set(a.dealId, (attachCountByDeal.get(a.dealId) ?? 0) + 1)
+  }
+
+  const openTaskCountByDeal = new Map<string, number>()
+  for (const t of (tasksRes.data ?? [])) {
+    openTaskCountByDeal.set(t.dealId, (openTaskCountByDeal.get(t.dealId) ?? 0) + 1)
+  }
+
+  const primaryContactByDeal = new Map<string, string>()
+  for (const dc of (contactsRes.data ?? [])) {
+    if (!primaryContactByDeal.has(dc.dealId) && dc.contact) {
+      const c = (dc.contact as unknown) as { firstName: string; lastName: string }
+      primaryContactByDeal.set(dc.dealId, `${c.firstName} ${c.lastName}`)
+    }
+  }
+
+  // Enrich each deal with computed fields
+  const enrichedDeals = deals.map((deal) => {
+    const quotes = quotesByDeal.get(deal.id) ?? []
+    const acceptedQuote = quotes.find((q) => q.status === 'accepted') ?? null
+
+    let marginPercent: number | null = null
+    if (acceptedQuote && Number(acceptedQuote.totalGross) > 0) {
+      const totalGross = Number(acceptedQuote.totalGross)
+      let totalEk = 0
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const li of ((acceptedQuote.quote_line_items as any[]) ?? [])) {
+        const ek = Number(li.product?.purchasePriceNet ?? 0)
+        const qty = Number(li.quantity ?? 1)
+        totalEk += ek * qty
+      }
+      if (totalGross > 0) {
+        marginPercent = Math.round(((totalGross - totalEk) / totalGross) * 100)
+      }
+    }
+
+    return {
+      ...deal,
+      primaryContactName: primaryContactByDeal.get(deal.id) ?? null,
+      quotesCount: quotes.length,
+      acceptedQuoteTotal: acceptedQuote ? Number(acceptedQuote.totalGross) : null,
+      attachmentsCount: attachCountByDeal.get(deal.id) ?? 0,
+      openTasksCount: openTaskCountByDeal.get(deal.id) ?? 0,
+      marginPercent,
+    }
+  })
+
+  return { stages: stages ?? [], deals: enrichedDeals }
 }
 
 export async function getActiveDealOptions() {
@@ -59,6 +144,7 @@ export async function getDealById(id: string) {
     .select(
       `id, title, value, currency, probability, expectedCloseAt, description, lostReason,
        pipelineId, stageId, companyId, ownerId, teamMemberId, projectStatus, createdAt, updatedAt,
+       locationStreet, locationZip, locationCity, locationCountry, plannedDelivery,
        company:companies(id, name),
        owner:profiles(id, firstName, lastName),
        teamMember:team_members(id, firstName, lastName, email, mobile, position),

@@ -15,7 +15,7 @@ export async function getCompanies(filters: CompanyFilters = {}) {
 
   let query = supabase
     .from('companies')
-    .select('id, name, industry, city, country, phone, email, createdAt, updatedAt', {
+    .select('id, name, industry, city, country, phone, email, tier, createdAt, updatedAt', {
       count: 'exact',
     })
     .order('createdAt', { ascending: false })
@@ -50,7 +50,7 @@ export async function getCompanyById(id: string) {
   const { data, error } = await supabase
     .from('companies')
     .select(
-      `id, name, website, industry, size, country, city, phone, email, linkedin, instagram, tags, createdAt, updatedAt,
+      `id, name, website, industry, size, country, city, phone, email, linkedin, instagram, tier, tags, createdAt, updatedAt,
        contacts(id, firstName, lastName, email, position),
        deals(id, title, value, currency, stageId)`
     )
