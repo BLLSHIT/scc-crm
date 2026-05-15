@@ -80,7 +80,7 @@ export interface CsvImportResult {
   errors: string[]
 }
 
-function parseCsvLine(line: string): string[] {
+function parseCsvLine(line: string, delimiter = ','): string[] {
   const result: string[] = []
   let current = ''
   let inQuotes = false
@@ -93,7 +93,7 @@ function parseCsvLine(line: string): string[] {
       } else {
         inQuotes = !inQuotes
       }
-    } else if (ch === ',' && !inQuotes) {
+    } else if (ch === delimiter && !inQuotes) {
       result.push(current)
       current = ''
     } else {
@@ -104,6 +104,12 @@ function parseCsvLine(line: string): string[] {
   return result
 }
 
+function detectDelimiter(firstLine: string): string {
+  const semicolons = (firstLine.match(/;/g) ?? []).length
+  const commas = (firstLine.match(/,/g) ?? []).length
+  return semicolons > commas ? ';' : ','
+}
+
 export async function importProductsCsv(csvText: string): Promise<CsvImportResult> {
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -111,12 +117,16 @@ export async function importProductsCsv(csvText: string): Promise<CsvImportResul
     return { imported: 0, updated: 0, skipped: 0, errors: ['Nicht authentifiziert.'] }
   }
 
-  const lines = csvText.split('\n').map((l) => l.trim()).filter(Boolean)
+  // BOM entfernen (Excel UTF-8 CSVs beginnen oft mit ﻿)
+  const cleaned = csvText.replace(/^﻿/, '')
+  const lines = cleaned.split('\n').map((l) => l.trim()).filter(Boolean)
   if (lines.length < 2) {
     return { imported: 0, updated: 0, skipped: 0, errors: ['CSV leer oder keine Datenzeilen.'] }
   }
 
-  const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase().trim())
+  // Delimiter auto-detektieren: Komma (Standard) oder Semikolon (Excel deutsch)
+  const delimiter = detectDelimiter(lines[0])
+  const headers = parseCsvLine(lines[0], delimiter).map((h) => h.toLowerCase().trim())
   const colIdx = (name: string) => headers.indexOf(name)
   if (colIdx('name') === -1) {
     return { imported: 0, updated: 0, skipped: 0, errors: ['Pflichtfeld "name" fehlt im CSV-Header.'] }
@@ -136,7 +146,7 @@ export async function importProductsCsv(csvText: string): Promise<CsvImportResul
   for (let i = 0; i < lines.length - 1; i++) {
     const lineNum = i + 2
     try {
-      const cols = parseCsvLine(lines[i + 1])
+      const cols = parseCsvLine(lines[i + 1], delimiter)
       const get = (name: string) => {
         const idx = colIdx(name)
         return idx >= 0 ? (cols[idx] ?? '').trim() : ''
