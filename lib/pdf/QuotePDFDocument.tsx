@@ -62,7 +62,7 @@ function formatDate(d: string | Date | null | undefined): string {
 const s = StyleSheet.create({
   page: {
     paddingTop: 36,
-    paddingBottom: 80, // Platz für fixed footer
+    paddingBottom: 100, // Platz für fixed footer
     paddingHorizontal: 40,
     fontFamily: 'Helvetica',
     fontSize: 9.5,
@@ -74,7 +74,7 @@ const s = StyleSheet.create({
   letterhead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   logo: { height: 44, marginBottom: 6 },
   companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#1e293b' },
-  metaSmall: { fontSize: 8, color: '#475569' },
+  metaSmall: { fontSize: 8, color: '#475569', textDecoration: 'underline' },
 
   // Recipient + Meta
   blocks: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 },
@@ -206,13 +206,11 @@ export function QuotePDFDocument({ quote, settings }: { quote: any; settings: an
           <View>
             <Image src={settings?.logoUrl || BRAND.logoUrl} style={s.logo} />
             <Text style={s.companyName}>{settings?.companyName ?? BRAND.name}</Text>
-            {settings?.companyAddress ? <Text style={s.metaSmall}>{settings.companyAddress}</Text> : null}
-            {settings?.companyZip || settings?.companyCity ? (
+            {(settings?.companyAddress || settings?.companyZip || settings?.companyCity || settings?.companyCountry) ? (
               <Text style={s.metaSmall}>
-                {[settings?.companyZip, settings?.companyCity].filter(Boolean).join(' ')}
+                {[settings?.companyAddress, [settings?.companyZip, settings?.companyCity].filter(Boolean).join(' '), settings?.companyCountry].filter(Boolean).join(' · ')}
               </Text>
             ) : null}
-            {settings?.companyCountry ? <Text style={s.metaSmall}>{settings.companyCountry}</Text> : null}
           </View>
           <View style={{ textAlign: 'right' }}>
             {settings?.companyPhone ? <Text style={s.metaSmall}>Tel.: {settings.companyPhone}</Text> : null}
@@ -231,20 +229,14 @@ export function QuotePDFDocument({ quote, settings }: { quote: any; settings: an
             {quote.contact ? (
               <Text>z.Hd. {quote.contact.firstName} {quote.contact.lastName}</Text>
             ) : null}
-            {quote.contact?.position ? (
-              <Text style={{ color: '#64748b', fontSize: 8.5 }}>{quote.contact.position}</Text>
-            ) : null}
             {(quote.company?.city || quote.company?.country) ? (
               <Text style={{ marginTop: 6 }}>
                 {[quote.company?.city, quote.company?.country].filter(Boolean).join(', ')}
               </Text>
             ) : null}
-            {quote.contact?.email ? (
-              <Text style={{ color: '#475569', fontSize: 8.5 }}>{quote.contact.email}</Text>
-            ) : null}
-            {(quote.contact?.phone || quote.contact?.mobile) ? (
+            {(quote.contact?.email || quote.contact?.phone || quote.contact?.mobile) ? (
               <Text style={{ color: '#475569', fontSize: 8.5 }}>
-                {[quote.contact?.phone, quote.contact?.mobile].filter(Boolean).join(' · ')}
+                {[quote.contact?.email, quote.contact?.phone ?? quote.contact?.mobile].filter(Boolean).join('  ·  ')}
               </Text>
             ) : null}
           </View>
@@ -412,9 +404,7 @@ export function QuotePDFDocument({ quote, settings }: { quote: any; settings: an
               <Text>{[settings?.companyZip, settings?.companyCity].filter(Boolean).join(' ')}</Text>
             ) : null}
             {settings?.companyCountry ? <Text>{settings.companyCountry}</Text> : null}
-            {settings?.companyPhone ? <Text>Tel.: {settings.companyPhone}</Text> : null}
-            {settings?.companyEmail ? <Text>{settings.companyEmail}</Text> : null}
-            {settings?.companyWebsite ? <Text>{settings.companyWebsite}</Text> : null}
+            {settings?.companyRegisterNumber ? <Text>HRB: {settings.companyRegisterNumber}</Text> : null}
           </View>
           <View style={s.footerCol}>
             <Text style={s.footerHeading}>Bankverbindung</Text>
@@ -432,7 +422,7 @@ export function QuotePDFDocument({ quote, settings }: { quote: any; settings: an
         <Text
           style={s.pageNum}
           render={({ pageNumber, totalPages }) =>
-            totalPages > 1 ? `Seite ${pageNumber} / ${totalPages}` : ''
+            `Seite ${pageNumber} / ${totalPages}`
           }
           fixed
         />

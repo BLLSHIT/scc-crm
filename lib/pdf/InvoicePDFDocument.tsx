@@ -54,13 +54,13 @@ function formatDate(d: string | Date | null | undefined): string {
 
 const s = StyleSheet.create({
   page: {
-    paddingTop: 36, paddingBottom: 80, paddingHorizontal: 40,
+    paddingTop: 36, paddingBottom: 100, paddingHorizontal: 40,
     fontFamily: 'Helvetica', fontSize: 9.5, color: '#1e293b', lineHeight: 1.4,
   },
   letterhead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   logo: { height: 44, marginBottom: 6 },
   companyName: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#1e293b' },
-  metaSmall: { fontSize: 8, color: '#475569' },
+  metaSmall: { fontSize: 8, color: '#475569', textDecoration: 'underline' },
 
   blocks: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 },
   blockLabel: { fontSize: 7, color: '#64748b', letterSpacing: 1, marginBottom: 4, textTransform: 'uppercase' },
@@ -147,13 +147,11 @@ export function InvoicePDFDocument({ invoice, settings }: { invoice: any; settin
           <View>
             <Image src={settings?.logoUrl || BRAND.logoUrl} style={s.logo} />
             <Text style={s.companyName}>{settings?.companyName ?? BRAND.name}</Text>
-            {settings?.companyAddress ? <Text style={s.metaSmall}>{settings.companyAddress}</Text> : null}
-            {settings?.companyZip || settings?.companyCity ? (
+            {(settings?.companyAddress || settings?.companyZip || settings?.companyCity || settings?.companyCountry) ? (
               <Text style={s.metaSmall}>
-                {[settings?.companyZip, settings?.companyCity].filter(Boolean).join(' ')}
+                {[settings?.companyAddress, [settings?.companyZip, settings?.companyCity].filter(Boolean).join(' '), settings?.companyCountry].filter(Boolean).join(' · ')}
               </Text>
             ) : null}
-            {settings?.companyCountry ? <Text style={s.metaSmall}>{settings.companyCountry}</Text> : null}
           </View>
           <View style={{ textAlign: 'right' }}>
             {settings?.companyPhone ? <Text style={s.metaSmall}>Tel.: {settings.companyPhone}</Text> : null}
@@ -169,16 +167,15 @@ export function InvoicePDFDocument({ invoice, settings }: { invoice: any; settin
             {invoice.contact ? (
               <Text>z.Hd. {invoice.contact.firstName} {invoice.contact.lastName}</Text>
             ) : null}
-            {invoice.contact?.position ? (
-              <Text style={{ color: '#64748b', fontSize: 8.5 }}>{invoice.contact.position}</Text>
-            ) : null}
             {(invoice.company?.city || invoice.company?.country) ? (
               <Text style={{ marginTop: 6 }}>
                 {[invoice.company?.city, invoice.company?.country].filter(Boolean).join(', ')}
               </Text>
             ) : null}
-            {invoice.contact?.email ? (
-              <Text style={{ color: '#475569', fontSize: 8.5 }}>{invoice.contact.email}</Text>
+            {(invoice.contact?.email || invoice.contact?.phone) ? (
+              <Text style={{ color: '#475569', fontSize: 8.5 }}>
+                {[invoice.contact?.email, invoice.contact?.phone].filter(Boolean).join('  ·  ')}
+              </Text>
             ) : null}
           </View>
 
@@ -344,9 +341,7 @@ export function InvoicePDFDocument({ invoice, settings }: { invoice: any; settin
               <Text>{[settings?.companyZip, settings?.companyCity].filter(Boolean).join(' ')}</Text>
             ) : null}
             {settings?.companyCountry ? <Text>{settings.companyCountry}</Text> : null}
-            {settings?.companyPhone ? <Text>Tel.: {settings.companyPhone}</Text> : null}
-            {settings?.companyEmail ? <Text>{settings.companyEmail}</Text> : null}
-            {settings?.companyWebsite ? <Text>{settings.companyWebsite}</Text> : null}
+            {settings?.companyRegisterNumber ? <Text>HRB: {settings.companyRegisterNumber}</Text> : null}
           </View>
           <View style={s.footerCol}>
             <Text style={s.footerHeading}>Bankverbindung</Text>
@@ -363,7 +358,7 @@ export function InvoicePDFDocument({ invoice, settings }: { invoice: any; settin
 
         <Text style={s.pageNum} fixed
           render={({ pageNumber, totalPages }) =>
-            totalPages > 1 ? `Seite ${pageNumber} / ${totalPages}` : ''
+            `Seite ${pageNumber} / ${totalPages}`
           } />
       </Page>
     </Document>
