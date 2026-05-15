@@ -25,6 +25,7 @@ model Settings {
   companyWebsite        String?
   taxNumber             String?
   ustId                 String?
+  companyRegisterNumber String?
   bankName              String?
   bankIban              String?
   bankBic               String?
