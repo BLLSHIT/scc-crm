@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   CalendarClock,
   CheckCircle2,
+  Lock,
+  BarChart3,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
@@ -26,7 +28,8 @@ export default async function DashboardPage({
   searchParams: Promise<{ view?: 'vertrieb' | 'management' }>
 }) {
   const sp = await searchParams
-  const view = sp.view === 'management' ? 'management' : 'vertrieb'
+  // view wird nach Auth/Rolle-Check nochmal geprüft (s.u.)
+  const requestedView = sp.view === 'management' ? 'management' : 'vertrieb'
 
   let profile: Profile | null = null
   let openDealsTotal = 0
@@ -41,6 +44,10 @@ export default async function DashboardPage({
   let topDeals: any[] = []
   let inactiveDeals: any[] = []
   let expiringQuotes: any[] = []
+  // GF-only
+  let isAdmin = false
+  let marginDeals: { id: string; title: string; company: string; umsatz: number; marginPercent: number }[] = []
+  let avgMarginPercent: number | null = null
 
   try {
     const supabase = await createClient()
@@ -175,10 +182,58 @@ export default async function DashboardPage({
       .order('validUntil', { ascending: true })
       .limit(5)
     expiringQuotes = expiring ?? []
+
+    // ── Geschäftsführung: Margen-Analyse (nur Admin) ──────────────────────
+    isAdmin = profile?.role === 'admin'
+    if (isAdmin && requestedView === 'management') {
+      const { data: acceptedQuotes } = await supabase
+        .from('quotes')
+        .select(
+          `id, totalGross, dealId,
+           deal:deals(id, title, company:companies(name)),
+           quote_line_items(quantity, product:products(purchasePriceNet))`
+        )
+        .eq('status', 'accepted')
+        .not('dealId', 'is', null)
+        .order('totalGross', { ascending: false })
+        .limit(50)
+
+      const rawMargins: { id: string; title: string; company: string; umsatz: number; marginPercent: number }[] = []
+      let totalWeightedMargin = 0
+      let totalUmsatz = 0
+
+      for (const q of (acceptedQuotes ?? [])) {
+        const gross = Number(q.totalGross ?? 0)
+        if (gross <= 0) continue
+        let totalEk = 0
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const li of ((q.quote_line_items as any[]) ?? [])) {
+          totalEk += Number(li.product?.purchasePriceNet ?? 0) * Number(li.quantity ?? 1)
+        }
+        const margin = Math.round(((gross - totalEk) / gross) * 100)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const deal = q.deal as any
+        rawMargins.push({
+          id: deal?.id ?? q.id,
+          title: deal?.title ?? '—',
+          company: deal?.company?.name ?? '—',
+          umsatz: gross,
+          marginPercent: margin,
+        })
+        totalWeightedMargin += margin * gross
+        totalUmsatz += gross
+      }
+
+      marginDeals = rawMargins.sort((a, b) => b.umsatz - a.umsatz).slice(0, 15)
+      avgMarginPercent = totalUmsatz > 0 ? Math.round(totalWeightedMargin / totalUmsatz) : null
+    }
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Dashboard" err={err} />
   }
+
+  // Nicht-Admins landen immer in der Vertrieb-Ansicht
+  const view = isAdmin ? requestedView : 'vertrieb'
 
   const winRate =
     wonCount + lostCount > 0 ? (wonCount / (wonCount + lostCount)) * 100 : 0
@@ -205,16 +260,23 @@ export default async function DashboardPage({
             >
               Vertrieb
             </Link>
-            <Link
-              href="/?view=management"
-              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
-                view === 'management'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              Geschäftsführung
-            </Link>
+            {isAdmin ? (
+              <Link
+                href="/?view=management"
+                className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+                  view === 'management'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                Geschäftsführung
+              </Link>
+            ) : (
+              <span className="px-4 py-1.5 text-sm rounded-md text-slate-300 flex items-center gap-1.5 cursor-not-allowed">
+                <Lock className="w-3 h-3" />
+                Geschäftsführung
+              </span>
+            )}
           </div>
         </div>
 
@@ -344,6 +406,68 @@ export default async function DashboardPage({
             </CardContent>
           </Card>
         </div>
+
+        {/* ── Geschäftsführungs-Ansicht: Margen-Analyse ── */}
+        {view === 'management' && isAdmin && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              <h3 className="font-semibold text-slate-900">Margen-Analyse (akzeptierte Angebote)</h3>
+              {avgMarginPercent !== null && (
+                <span className={`ml-auto px-3 py-1 text-sm font-bold rounded-full ${
+                  avgMarginPercent >= 30 ? 'bg-emerald-100 text-emerald-700' :
+                  avgMarginPercent >= 10 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  Ø Marge: {avgMarginPercent}%
+                </span>
+              )}
+            </div>
+            <Card>
+              <CardContent className="p-0">
+                {marginDeals.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-8">Keine akzeptierten Angebote mit Produktdaten gefunden.</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-b">
+                      <tr>
+                        <th className="text-left px-4 py-2.5 font-medium text-slate-600">Deal</th>
+                        <th className="text-left px-4 py-2.5 font-medium text-slate-600">Firma</th>
+                        <th className="text-right px-4 py-2.5 font-medium text-slate-600">Umsatz (Brutto)</th>
+                        <th className="text-right px-4 py-2.5 font-medium text-slate-600">Soll-Marge</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {marginDeals.map((m) => (
+                        <tr key={m.id} className="hover:bg-slate-50">
+                          <td className="px-4 py-2.5">
+                            <Link href={`/deals/${m.id}`} className="font-medium text-slate-900 hover:text-blue-600">
+                              {m.title}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-2.5 text-slate-500">{m.company}</td>
+                          <td className="px-4 py-2.5 text-right font-mono text-sm">
+                            {formatCurrency(m.umsatz, 'EUR')}
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            <span className={`font-bold ${
+                              m.marginPercent >= 30 ? 'text-emerald-600' :
+                              m.marginPercent >= 10 ? 'text-amber-600' : 'text-red-600'
+                            }`}>
+                              {m.marginPercent}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </CardContent>
+            </Card>
+            <p className="text-xs text-slate-400">
+              Soll-Marge = (Brutto-Umsatz − Σ EK-Netto) / Brutto-Umsatz. Nur Deals mit akzeptiertem Angebot werden angezeigt.
+            </p>
+          </div>
+        )}
 
         {/* Top 10 + Inaktive Deals + Quotes laufen ab */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

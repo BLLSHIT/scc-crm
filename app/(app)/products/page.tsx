@@ -11,6 +11,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Plus, Package, Lock } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
+import { ProductCsvImport } from '@/components/products/ProductCsvImport'
 import type { Profile } from '@/types/app.types'
 
 export default async function ProductsPage({
@@ -140,6 +141,7 @@ export default async function ProductsPage({
             <SearchBar placeholder="Produkte durchsuchen…" />
             <CategoryFilter options={categories} />
           </div>
+          <ProductCsvImport />
 
           <div className="bg-white rounded-xl border overflow-hidden">
             <table className="w-full text-sm">
