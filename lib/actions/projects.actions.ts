@@ -9,6 +9,7 @@ import {
 } from '@/lib/validations/project.schema'
 import { logActivity } from '@/lib/db/activity-logs'
 import type { ProjectStatus } from '@/lib/db/projects'
+import { runWorkflows } from '@/lib/workflows/engine'
 
 export type ActionResult = { error?: Record<string, string[]>; redirectTo?: string }
 
@@ -122,6 +123,13 @@ export async function updateProjectStatus(id: string, newStatus: ProjectStatus):
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
+
+  const { data: projectData } = await supabase
+    .from('projects')
+    .select('name')
+    .eq('id', id)
+    .single()
+
   const patch: Record<string, unknown> = { status: newStatus, updatedAt: new Date().toISOString() }
   if (newStatus === 'completed') patch.actualEndDate = new Date().toISOString()
   const { error } = await supabase.from('projects').update(patch).eq('id', id)
@@ -136,6 +144,15 @@ export async function updateProjectStatus(id: string, newStatus: ProjectStatus):
     })
   } catch (logErr) {
     console.warn('[updateProjectStatus] logActivity failed:', logErr)
+  }
+  try {
+    await runWorkflows('project_status_changed', {
+      projectId: id,
+      status: newStatus,
+      projectName: projectData?.name,
+    })
+  } catch (err) {
+    console.error('[workflow] project_status_changed failed:', err)
   }
   revalidatePath('/projects')
   revalidatePath(`/projects/${id}`)

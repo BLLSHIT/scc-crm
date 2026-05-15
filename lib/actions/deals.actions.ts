@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { dealSchema, type DealInput } from '@/lib/validations/deal.schema'
 import { logActivity } from '@/lib/db/activity-logs'
+import { runWorkflows } from '@/lib/workflows/engine'
 
 export type ActionResult = { error?: Record<string, string[]>; redirectTo?: string }
 
@@ -88,6 +89,13 @@ export async function moveDealStage(
   stageId: string
 ): Promise<ActionResult> {
   const supabase = await createClient()
+
+  const { data: dealData } = await supabase
+    .from('deals')
+    .select('title, company:companies(name)')
+    .eq('id', dealId)
+    .single()
+
   const { error } = await supabase
     .from('deals')
     .update({ stageId, updatedAt: new Date().toISOString() })
@@ -104,6 +112,16 @@ export async function moveDealStage(
     summary: 'Pipeline-Stage geändert',
     metadata: { stageId },
   })
+  try {
+    await runWorkflows('deal_stage_changed', {
+      dealId,
+      stageId,
+      dealTitle: dealData?.title,
+      companyName: (dealData?.company as { name?: string } | null)?.name ?? undefined,
+    })
+  } catch (err) {
+    console.error('[workflow] deal_stage_changed failed:', err)
+  }
   revalidatePath('/deals')
   return {}
 }
