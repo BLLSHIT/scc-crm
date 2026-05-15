@@ -98,6 +98,7 @@ export async function getRecentActivity(limit = 20): Promise<FeedItem[]> {
     supabase
       .from('activity_logs')
       .select('id, action, summary, entityType, entityId, userName, createdAt')
+      .neq('action', 'note_added')
       .order('createdAt', { ascending: false })
       .limit(20),
     supabase
