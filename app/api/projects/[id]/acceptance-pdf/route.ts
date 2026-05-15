@@ -32,9 +32,10 @@ export async function GET(
     const photoUrls: Record<string, string> = {}
     await Promise.all(
       allPhotos.map(async (photo) => {
-        const { data } = await supabase.storage
+        const { data, error } = await supabase.storage
           .from('project-attachments')
           .createSignedUrl(photo.storagePath, 300)
+        if (error) console.warn(`[acceptance-pdf] photo ${photo.id} signed URL failed:`, error)
         if (data?.signedUrl) photoUrls[photo.id] = data.signedUrl
       })
     )
