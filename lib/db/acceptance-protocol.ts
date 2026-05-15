@@ -59,26 +59,18 @@ export interface AcceptanceProtocol {
 export async function getOrCreateProtocol(projectId: string): Promise<AcceptanceProtocol> {
   const supabase = await createClient()
 
-  // Check existing
-  const { data: existing } = await supabase
+  const id = randomUUID()
+  const { data: upserted, error } = await supabase
     .from('acceptance_protocols')
-    .select('*')
-    .eq('projectId', projectId)
+    .upsert(
+      { id, projectId, updatedAt: new Date().toISOString() },
+      { onConflict: 'projectId', ignoreDuplicates: false }
+    )
+    .select('id')
     .single()
+  if (error) throw new Error(error.message)
 
-  let protocolId: string
-  if (existing) {
-    protocolId = existing.id
-  } else {
-    const id = randomUUID()
-    const { error } = await supabase
-      .from('acceptance_protocols')
-      .insert({ id, projectId, updatedAt: new Date().toISOString() })
-    if (error) throw new Error(error.message)
-    protocolId = id
-  }
-
-  return getProtocolWithDetails(protocolId)
+  return getProtocolWithDetails(upserted.id)
 }
 
 export async function getProtocolWithDetails(protocolId: string): Promise<AcceptanceProtocol> {
@@ -112,11 +104,12 @@ export async function getProtocolWithDetails(protocolId: string): Promise<Accept
 
       const itemList: AcceptanceItem[] = await Promise.all(
         (items ?? []).map(async (item) => {
-          const { data: photos } = await supabase
+          const { data: photos, error: photoErr } = await supabase
             .from('acceptance_item_photos')
             .select('*')
             .eq('itemId', item.id)
             .order('createdAt', { ascending: true })
+          if (photoErr) console.error(`[getProtocolWithDetails] photos error for item ${item.id}:`, photoErr)
           return {
             ...item,
             photos: (photos ?? []) as AcceptanceItemPhoto[],
@@ -142,12 +135,15 @@ export async function getPhaseByRemoteToken(token: string): Promise<{
 } | null> {
   const supabase = await createClient()
 
-  const { data: phase } = await supabase
+  const { data: phase, error: phaseErr } = await supabase
     .from('acceptance_phases')
     .select('*')
     .eq('remoteApprovalToken', token)
     .single()
-  if (!phase) return null
+  if (phaseErr || !phase) {
+    if (phaseErr?.code !== 'PGRST116') console.error('[getPhaseByRemoteToken] error:', phaseErr)
+    return null
+  }
 
   const { data: protocol } = await supabase
     .from('acceptance_protocols')
@@ -164,17 +160,18 @@ export async function getPhaseByRemoteToken(token: string): Promise<{
 
   const itemList: AcceptanceItem[] = await Promise.all(
     (items ?? []).map(async (item) => {
-      const { data: photos } = await supabase
+      const { data: photos, error: photoErr } = await supabase
         .from('acceptance_item_photos')
         .select('*')
         .eq('itemId', item.id)
+      if (photoErr) console.error(`[getPhaseByRemoteToken] photos error for item ${item.id}:`, photoErr)
       return { ...item, photos: photos ?? [] } as AcceptanceItem
     })
   )
 
   return {
     phase: { ...phase, items: itemList, completedBy: null } as AcceptancePhase,
-    projectName: (protocol.project as any)?.name ?? '',
+    projectName: (protocol.project as { name: string } | null)?.name ?? '',
     protocolId: protocol.id,
   }
 }
