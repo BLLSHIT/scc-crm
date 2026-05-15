@@ -122,3 +122,16 @@ export async function getAttachmentDownloadUrl(storagePath: string): Promise<str
   }
   return data?.signedUrl ?? null
 }
+
+/** Universelle Signed-URL für beliebigen Storage-Bucket (1h gültig) */
+export async function getSignedAttachmentUrl(storagePath: string, bucket: string): Promise<string | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .storage.from(bucket)
+    .createSignedUrl(storagePath, 3600)
+  if (error) {
+    console.error('[getSignedAttachmentUrl] error:', error)
+    return null
+  }
+  return data?.signedUrl ?? null
+}

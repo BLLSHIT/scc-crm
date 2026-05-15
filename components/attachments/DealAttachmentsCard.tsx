@@ -4,9 +4,10 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Upload, FileText, Trash2, Map, Image as ImageIcon, FileSignature } from 'lucide-react'
+import { Upload, FileText, Trash2, Map, Image as ImageIcon, FileSignature, Eye } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils/format'
 import { recordDealAttachment, deleteDealAttachment } from '@/lib/actions/attachments.actions'
+import { FilePreviewModal } from '@/components/ui/FilePreviewModal'
 
 interface Attachment {
   id: string
@@ -49,6 +50,7 @@ export function DealAttachmentsCard({ dealId, initialAttachments }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [category, setCategory] = useState<string>('other')
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [, startTransition] = useTransition()
 
   async function handleUpload(file: File) {
@@ -134,7 +136,23 @@ export function DealAttachmentsCard({ dealId, initialAttachments }: Props) {
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   }
 
+  const previewFiles = attachments.map((a) => ({
+    id: a.id,
+    filename: a.filename,
+    mimeType: a.mimeType,
+    storagePath: a.storagePath,
+    bucket: 'deal-attachments',
+  }))
+
   return (
+    <>
+    {previewIndex !== null && (
+      <FilePreviewModal
+        files={previewFiles}
+        initialIndex={previewIndex}
+        onClose={() => setPreviewIndex(null)}
+      />
+    )}
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center justify-between">
@@ -192,7 +210,7 @@ export function DealAttachmentsCard({ dealId, initialAttachments }: Props) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleDownload(a)}
+                    onClick={() => setPreviewIndex(attachments.indexOf(a))}
                     className="flex-1 text-left min-w-0"
                   >
                     <p className="text-sm font-medium text-slate-900 truncate hover:text-blue-600">
@@ -209,6 +227,16 @@ export function DealAttachmentsCard({ dealId, initialAttachments }: Props) {
                     type="button"
                     size="sm"
                     variant="ghost"
+                    onClick={() => setPreviewIndex(attachments.indexOf(a))}
+                    className="text-slate-400 hover:text-slate-700"
+                    title="Vorschau"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
                     onClick={() => handleDelete(a)}
                     className="text-red-500 hover:text-red-700"
                   >
@@ -221,5 +249,6 @@ export function DealAttachmentsCard({ dealId, initialAttachments }: Props) {
         )}
       </CardContent>
     </Card>
+    </>
   )
 }

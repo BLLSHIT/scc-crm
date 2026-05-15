@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Upload, FileText, Trash2, Map, Image as ImageIcon, FileSignature, ScrollText } from 'lucide-react'
+import { Upload, FileText, Trash2, Map, Image as ImageIcon, FileSignature, ScrollText, Eye, Link2 } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils/format'
 import { recordProjectAttachment, deleteProjectAttachment } from '@/lib/actions/projects.actions'
+import { FilePreviewModal } from '@/components/ui/FilePreviewModal'
 
 interface Attachment {
   id: string
@@ -23,6 +24,7 @@ interface Attachment {
 interface Props {
   projectId: string
   initialAttachments: Attachment[]
+  dealAttachments?: Attachment[]
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -53,13 +55,20 @@ const CATEGORY_COLOR: Record<string, string> = {
   other: 'text-slate-500 bg-slate-50',
 }
 
-export function ProjectAttachmentsCard({ projectId, initialAttachments }: Props) {
+export function ProjectAttachmentsCard({ projectId, initialAttachments, dealAttachments = [] }: Props) {
   const router = useRouter()
   const [attachments, setAttachments] = useState(initialAttachments)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [category, setCategory] = useState<string>('other')
+  const [previewFiles, setPreviewFiles] = useState<Array<{ id: string; filename: string; mimeType: string | null; storagePath: string; bucket: string }> | null>(null)
+  const [previewIndex, setPreviewIndex] = useState(0)
   const [, startTransition] = useTransition()
+
+  function openPreview(files: Attachment[], idx: number, bucket: string) {
+    setPreviewFiles(files.map((a) => ({ id: a.id, filename: a.filename, mimeType: a.mimeType, storagePath: a.storagePath, bucket })))
+    setPreviewIndex(idx)
+  }
 
   async function handleUpload(file: File) {
     setError(null); setUploading(true)
@@ -132,9 +141,17 @@ export function ProjectAttachmentsCard({ projectId, initialAttachments }: Props)
   }
 
   return (
+    <>
+    {previewFiles && (
+      <FilePreviewModal
+        files={previewFiles}
+        initialIndex={previewIndex}
+        onClose={() => setPreviewFiles(null)}
+      />
+    )}
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Dateien ({attachments.length})</CardTitle>
+        <CardTitle className="text-base">Dateien ({attachments.length + dealAttachments.length})</CardTitle>
       </CardHeader>
       <CardContent>
         {error && (
@@ -177,7 +194,7 @@ export function ProjectAttachmentsCard({ projectId, initialAttachments }: Props)
                   <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${color}`}>
                     <Icon className="w-4 h-4" />
                   </div>
-                  <button type="button" onClick={() => handleDownload(a)} className="flex-1 text-left min-w-0">
+                  <button type="button" onClick={() => openPreview(attachments, attachments.indexOf(a), 'project-attachments')} className="flex-1 text-left min-w-0">
                     <p className="text-sm font-medium text-slate-900 truncate hover:text-blue-600">{a.filename}</p>
                     <p className="text-xs text-slate-500">
                       {CATEGORY_LABEL[a.category] ?? a.category}
@@ -187,6 +204,11 @@ export function ProjectAttachmentsCard({ projectId, initialAttachments }: Props)
                     </p>
                   </button>
                   <Button type="button" size="sm" variant="ghost"
+                    onClick={() => openPreview(attachments, attachments.indexOf(a), 'project-attachments')}
+                    className="text-slate-400 hover:text-slate-700" title="Vorschau">
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost"
                     onClick={() => handleDelete(a)} className="text-red-500 hover:text-red-700">
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -195,7 +217,41 @@ export function ProjectAttachmentsCard({ projectId, initialAttachments }: Props)
             })}
           </ul>
         )}
+        {dealAttachments.length > 0 && (
+          <div className="mt-4 pt-4 border-t">
+            <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
+              <Link2 className="w-3 h-3" />
+              Aus verknüpftem Deal ({dealAttachments.length})
+            </p>
+            <ul className="divide-y -mx-3">
+              {dealAttachments.map((a, idx) => {
+                const Icon = CATEGORY_ICON[a.category] ?? FileText
+                const color = CATEGORY_COLOR[a.category] ?? CATEGORY_COLOR.other
+                return (
+                  <li key={a.id} className="flex items-start gap-2 px-3 py-2 hover:bg-slate-50">
+                    <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${color}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <button type="button" onClick={() => openPreview(dealAttachments, idx, 'deal-attachments')} className="flex-1 text-left min-w-0">
+                      <p className="text-sm font-medium text-slate-700 truncate hover:text-blue-600">{a.filename}</p>
+                      <p className="text-xs text-slate-400">
+                        {CATEGORY_LABEL[a.category] ?? a.category}
+                        {a.fileSize ? ` · ${formatSize(a.fileSize)}` : ''}
+                      </p>
+                    </button>
+                    <Button type="button" size="sm" variant="ghost"
+                      onClick={() => openPreview(dealAttachments, idx, 'deal-attachments')}
+                      className="text-slate-400 hover:text-slate-700" title="Vorschau">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
       </CardContent>
     </Card>
+    </>
   )
 }

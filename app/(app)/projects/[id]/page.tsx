@@ -38,6 +38,7 @@ export default async function ProjectDetailPage({
   let profile: Profile | null = null
   let project: any
   let attachments: any[] = []
+  let dealAttachments: any[] = []
   let activities: any[] = []
   let projectTasks: any[] = []
   let projectInvoices: any[] = []
@@ -52,6 +53,15 @@ export default async function ProjectDetailPage({
     profile = (profileResult.data as Profile) ?? null
     project = await getProjectById(id)
     attachments = await getProjectAttachments(id)
+    // Deal-Dateien für gemeinsamen Datei-Pool
+    if (project.dealId) {
+      const { data: da } = await supabase
+        .from('deal_attachments')
+        .select('id, filename, storagePath, fileSize, mimeType, category, uploadedByName, createdAt')
+        .eq('dealId', project.dealId)
+        .order('createdAt', { ascending: false })
+      dealAttachments = da ?? []
+    }
     // Activity-Logs aus deal-context (geteilt)
     activities = project.dealId ? await getActivityLogs('deal', project.dealId, 20) : []
 
@@ -197,7 +207,7 @@ export default async function ProjectDetailPage({
           </div>
 
           <div className="space-y-6">
-            <ProjectAttachmentsCard projectId={id} initialAttachments={attachments} />
+            <ProjectAttachmentsCard projectId={id} initialAttachments={attachments} dealAttachments={dealAttachments} />
 
             <Card>
               <CardHeader>
