@@ -8,7 +8,6 @@ import { getAllCompanyOptions } from '@/lib/db/companies'
 import { getAllContactOptions } from '@/lib/db/contacts'
 import { getActiveTeamMemberOptions } from '@/lib/db/team-members'
 import { getActiveDealOptions } from '@/lib/db/deals'
-import { getActiveBuildTeamOptions } from '@/lib/db/build-teams'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
 
@@ -23,7 +22,6 @@ export default async function NewProjectPage({
   let contacts: any[] = []
   let teamMembers: any[] = []
   let deals: any[] = []
-  let buildTeams: any[] = []
   let prefill: any = {}
 
   try {
@@ -35,14 +33,13 @@ export default async function NewProjectPage({
       .from('profiles').select('*').eq('id', user.id).single()
     profile = (profileResult.data as Profile) ?? null
 
-    const [c, p, tm, dls, bt] = await Promise.all([
+    const [c, p, tm, dls] = await Promise.all([
       getAllCompanyOptions(),
       getAllContactOptions(),
       getActiveTeamMemberOptions(),
       getActiveDealOptions(),
-      getActiveBuildTeamOptions(),
     ])
-    companies = c; contacts = p; teamMembers = tm; deals = dls; buildTeams = bt
+    companies = c; contacts = p; teamMembers = tm; deals = dls
 
     if (sp.dealId) {
       const { data: deal } = await supabase
@@ -75,7 +72,6 @@ export default async function NewProjectPage({
           contacts={contacts}
           teamMembers={teamMembers}
           deals={deals}
-          buildTeams={buildTeams}
           defaultValues={prefill}
         />
       </main>

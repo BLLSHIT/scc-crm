@@ -9,7 +9,6 @@ import { getAllCompanyOptions } from '@/lib/db/companies'
 import { getAllContactOptions } from '@/lib/db/contacts'
 import { getActiveTeamMemberOptions } from '@/lib/db/team-members'
 import { getActiveDealOptions } from '@/lib/db/deals'
-import { getActiveBuildTeamOptions } from '@/lib/db/build-teams'
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
@@ -27,7 +26,6 @@ export default async function EditProjectPage({
   let contacts: any[] = []
   let teamMembers: any[] = []
   let deals: any[] = []
-  let buildTeams: any[] = []
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -36,15 +34,14 @@ export default async function EditProjectPage({
     const profileResult = await supabase
       .from('profiles').select('*').eq('id', user.id).single()
     profile = (profileResult.data as Profile) ?? null
-    const [p, c, ct, tm, dls, bt] = await Promise.all([
+    const [p, c, ct, tm, dls] = await Promise.all([
       getProjectById(id),
       getAllCompanyOptions(),
       getAllContactOptions(),
       getActiveTeamMemberOptions(),
       getActiveDealOptions(),
-      getActiveBuildTeamOptions(),
     ])
-    project = p; companies = c; contacts = ct; teamMembers = tm; deals = dls; buildTeams = bt
+    project = p; companies = c; contacts = ct; teamMembers = tm; deals = dls
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Projekt laden" err={err} />
@@ -75,7 +72,6 @@ export default async function EditProjectPage({
           contacts={contacts}
           teamMembers={teamMembers}
           deals={deals}
-          buildTeams={buildTeams}
           defaultValues={{
             name: project.name ?? '',
             description: project.description ?? '',

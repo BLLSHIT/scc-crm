@@ -43,7 +43,6 @@ export async function getProjectById(id: string) {
        company:companies(id, name, email, phone, city, country),
        contact:contacts(id, firstName, lastName, email, phone, position),
        teamMember:team_members(id, firstName, lastName, email, mobile, position),
-       buildTeam:build_teams(id, name),
        deal:deals(id, title, value, currency, stage:pipeline_stages(name, color))`
     )
     .eq('id', id)
