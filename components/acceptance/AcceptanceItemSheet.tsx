@@ -35,13 +35,17 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
   useEffect(() => {
     if (item.photos.length === 0) return
     const supabase = createClient()
-    item.photos.forEach(async (photo) => {
-      const { data } = await supabase.storage
-        .from('project-attachments')
-        .createSignedUrl(photo.storagePath, 3600)
-      if (data?.signedUrl) {
-        setPhotoUrls((prev) => ({ ...prev, [photo.id]: data.signedUrl }))
-      }
+    Promise.all(
+      item.photos.map(async (photo) => {
+        const { data } = await supabase.storage
+          .from('project-attachments')
+          .createSignedUrl(photo.storagePath, 3600)
+        return [photo.id, data?.signedUrl ?? null] as [string, string | null]
+      })
+    ).then((results) => {
+      const urls: Record<string, string> = {}
+      results.forEach(([id, url]) => { if (url) urls[id] = url })
+      setPhotoUrls(urls)
     })
   }, [item.photos])
 
@@ -120,7 +124,7 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
             {(['not_checked', 'ok', 'defect'] as const).map((s) => (
               <button
                 key={s}
-                onClick={() => setStatus(s)}
+                onClick={() => { setStatus(s); if (s !== 'defect') setPriority('') }}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
                   status === s
                     ? s === 'ok'    ? 'bg-green-500 text-white border-green-500'
