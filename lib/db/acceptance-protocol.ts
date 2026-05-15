@@ -59,18 +59,33 @@ export interface AcceptanceProtocol {
 export async function getOrCreateProtocol(projectId: string): Promise<AcceptanceProtocol> {
   const supabase = await createClient()
 
-  const id = randomUUID()
-  const { data: upserted, error } = await supabase
+  // Fast path: protocol already exists
+  const { data: existing } = await supabase
     .from('acceptance_protocols')
-    .upsert(
-      { id, projectId, updatedAt: new Date().toISOString() },
-      { onConflict: 'projectId', ignoreDuplicates: false }
-    )
     .select('id')
-    .single()
-  if (error) throw new Error(error.message)
+    .eq('projectId', projectId)
+    .maybeSingle()
 
-  return getProtocolWithDetails(upserted.id)
+  if (existing) return getProtocolWithDetails(existing.id)
+
+  // Create new protocol
+  const id = randomUUID()
+  const { error } = await supabase
+    .from('acceptance_protocols')
+    .insert({ id, projectId, updatedAt: new Date().toISOString() })
+
+  // Race condition: another request inserted first (unique constraint = code 23505)
+  if (error?.code === '23505') {
+    const { data: race } = await supabase
+      .from('acceptance_protocols')
+      .select('id')
+      .eq('projectId', projectId)
+      .single()
+    return getProtocolWithDetails(race!.id)
+  }
+
+  if (error) throw new Error(error.message)
+  return getProtocolWithDetails(id)
 }
 
 export async function getProtocolWithDetails(protocolId: string): Promise<AcceptanceProtocol> {
