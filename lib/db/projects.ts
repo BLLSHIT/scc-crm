@@ -43,6 +43,7 @@ export async function getProjectById(id: string) {
        company:companies(id, name, email, phone, city, country),
        contact:contacts(id, firstName, lastName, email, phone, position),
        teamMember:team_members(id, firstName, lastName, email, mobile, position),
+       buildTeam:build_teams(id, name),
        deal:deals(id, title, value, currency, stage:pipeline_stages(name, color))`
     )
     .eq('id', id)
@@ -52,11 +53,21 @@ export async function getProjectById(id: string) {
     throw new Error(error.message)
   }
 
-  const { data: milestones } = await supabase
-    .from('project_milestones').select('*').eq('projectId', id)
-    .order('sortOrder', { ascending: true }).order('createdAt', { ascending: true })
+  const [milestonesRes, punchRes, materialRes] = await Promise.all([
+    supabase.from('project_milestones').select('*').eq('projectId', id)
+      .order('sortOrder', { ascending: true }).order('createdAt', { ascending: true }),
+    supabase.from('project_punch_items').select('*').eq('projectId', id)
+      .order('sortOrder', { ascending: true }).order('createdAt', { ascending: true }),
+    supabase.from('project_material_items').select('*').eq('projectId', id)
+      .order('sortOrder', { ascending: true }).order('createdAt', { ascending: true }),
+  ])
 
-  return { ...data, milestones: milestones ?? [] }
+  return {
+    ...data,
+    milestones: milestonesRes.data ?? [],
+    punchItems: punchRes.data ?? [],
+    materialItems: materialRes.data ?? [],
+  }
 }
 
 export async function getProjectsByDealId(dealId: string) {

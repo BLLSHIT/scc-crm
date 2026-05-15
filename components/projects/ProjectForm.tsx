@@ -17,6 +17,7 @@ interface CompanyOption { id: string; name: string }
 interface ContactOption { id: string; firstName: string; lastName: string; companyId?: string | null }
 interface TeamMemberOption { id: string; firstName: string; lastName: string }
 interface DealOption { id: string; title: string; company?: { id: string; name: string } | null }
+interface BuildTeamOption { id: string; name: string }
 
 interface Props {
   defaultValues?: Partial<ProjectInput>
@@ -26,11 +27,12 @@ interface Props {
   contacts?: ContactOption[]
   teamMembers?: TeamMemberOption[]
   deals?: DealOption[]
+  buildTeams?: BuildTeamOption[]
 }
 
 export function ProjectForm({
   defaultValues, onSubmit, title,
-  companies = [], contacts = [], teamMembers = [], deals = [],
+  companies = [], contacts = [], teamMembers = [], deals = [], buildTeams = [],
 }: Props) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
@@ -146,6 +148,16 @@ export function ProjectForm({
               </select>
             </div>
           </div>
+          {buildTeams.length > 0 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="buildTeamId">Bauteam</Label>
+              <select id="buildTeamId" {...register('buildTeamId')}
+                className="w-full border border-input bg-background px-3 py-2 text-sm rounded-md">
+                <option value="">— kein Bauteam —</option>
+                {buildTeams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+          )}
         </CardContent>
       </Card>
 

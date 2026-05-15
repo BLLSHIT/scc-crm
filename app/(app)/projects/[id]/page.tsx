@@ -9,9 +9,12 @@ import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProjectStatusActions } from '@/components/projects/ProjectStatusActions'
 import { MilestonesCard } from '@/components/projects/MilestonesCard'
+import { PunchListCard } from '@/components/projects/PunchListCard'
+import { MaterialChecklistCard } from '@/components/projects/MaterialChecklistCard'
+import { ProjectPhotoGallery } from '@/components/projects/ProjectPhotoGallery'
 import { ProjectAttachmentsCard } from '@/components/projects/ProjectAttachmentsCard'
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
-import { Pencil, Building2, User, UserCheck, Mail, Phone, FileText, MapPin, Receipt } from 'lucide-react'
+import { Pencil, Building2, User, UserCheck, Mail, Phone, FileText, MapPin, Receipt, HardHat } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
@@ -150,6 +153,10 @@ export default async function ProjectDetailPage({
 
             <MilestonesCard projectId={id} milestones={project.milestones ?? []} />
 
+            <MaterialChecklistCard projectId={id} items={project.materialItems ?? []} />
+
+            <PunchListCard projectId={id} items={project.punchItems ?? []} />
+
             {projectTasks.length > 0 && (
               <Card>
                 <CardHeader>
@@ -208,6 +215,10 @@ export default async function ProjectDetailPage({
 
           <div className="space-y-6">
             <ProjectAttachmentsCard projectId={id} initialAttachments={attachments} dealAttachments={dealAttachments} />
+
+            <ProjectPhotoGallery
+              photos={attachments.filter((a: any) => (a.mimeType as string).startsWith('image/'))}
+            />
 
             <Card>
               <CardHeader>
@@ -268,6 +279,22 @@ export default async function ProjectDetailPage({
                       <Phone className="w-3 h-3" />{project.teamMember.mobile}
                     </a>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {project.buildTeam && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <HardHat className="w-4 h-4 text-orange-500" />Bauteam
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                  <Link href={`/build-teams/${project.buildTeam.id}`}
+                    className="font-medium text-blue-600 hover:underline">
+                    {project.buildTeam.name}
+                  </Link>
                 </CardContent>
               </Card>
             )}

@@ -3,11 +3,36 @@ import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { projectSchema, milestoneSchema, type ProjectInput, type MilestoneInput } from '@/lib/validations/project.schema'
+import {
+  projectSchema, milestoneSchema, punchItemSchema, materialItemSchema,
+  type ProjectInput, type MilestoneInput, type PunchItemInput, type MaterialItemInput,
+} from '@/lib/validations/project.schema'
 import { logActivity } from '@/lib/db/activity-logs'
 import type { ProjectStatus } from '@/lib/db/projects'
 
 export type ActionResult = { error?: Record<string, string[]>; redirectTo?: string }
+
+const DEFAULT_MILESTONES = [
+  { title: 'Standortprüfung', sortOrder: 0 },
+  { title: 'Genehmigung eingeholt', sortOrder: 1 },
+  { title: 'Material bestellt', sortOrder: 2 },
+  { title: 'Aushub / Untergrund vorbereitet', sortOrder: 3 },
+  { title: 'Court-Konstruktion installiert', sortOrder: 4 },
+  { title: 'Belag verlegt', sortOrder: 5 },
+  { title: 'Beleuchtung montiert', sortOrder: 6 },
+  { title: 'Übergabe an Kunden', sortOrder: 7 },
+]
+
+async function insertDefaultMilestonesForProject(supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>, projectId: string) {
+  const rows = DEFAULT_MILESTONES.map((m) => ({
+    id: randomUUID(),
+    projectId,
+    title: m.title,
+    sortOrder: m.sortOrder,
+    updatedAt: new Date().toISOString(),
+  }))
+  await supabase.from('project_milestones').insert(rows)
+}
 
 function clean(input: ProjectInput) {
   return {
@@ -18,6 +43,7 @@ function clean(input: ProjectInput) {
     companyId: input.companyId || null,
     contactId: input.contactId || null,
     teamMemberId: input.teamMemberId || null,
+    buildTeamId: input.buildTeamId || null,
     startDate: input.startDate || null,
     plannedEndDate: input.plannedEndDate || null,
     actualEndDate: input.actualEndDate || null,
@@ -43,14 +69,23 @@ export async function createProject(input: ProjectInput): Promise<ActionResult> 
     console.error('[createProject] error:', error)
     return { error: { _form: [error.message] } }
   }
+  // Auto-Setup: Standard-Meilensteine
+  await insertDefaultMilestonesForProject(supabase, id)
   await logActivity({
-    entityType: 'deal', // unter deals-Aktivität bündeln wenn vom Deal kommend
+    entityType: 'deal',
     entityId: parsed.data.dealId || id,
     action: 'created',
     summary: `Projekt „${parsed.data.name}" angelegt`,
   })
   revalidatePath('/projects')
   return { redirectTo: `/projects/${id}` }
+}
+
+export async function insertDefaultMilestones(projectId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  await insertDefaultMilestonesForProject(supabase, projectId)
+  revalidatePath(`/projects/${projectId}`)
+  return {}
 }
 
 export async function updateProject(id: string, input: ProjectInput): Promise<ActionResult> {
@@ -251,5 +286,140 @@ export async function deleteProjectAttachment(id: string): Promise<{ error?: str
   const { error } = await supabase.from('project_attachments').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath(`/projects/${row.projectId}`)
+  return {}
+}
+
+// ─── Punch-List (Abnahme-Checkliste) ────────────────────────────────────────
+
+export async function addPunchItem(projectId: string, input: PunchItemInput): Promise<ActionResult> {
+  const parsed = punchItemSchema.safeParse(input)
+  if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
+  const supabase = await createClient()
+  const { data: existing } = await supabase
+    .from('project_punch_items').select('sortOrder').eq('projectId', projectId)
+    .order('sortOrder', { ascending: false }).limit(1)
+  const nextSort = (existing?.[0]?.sortOrder ?? -1) + 1
+  const { error } = await supabase.from('project_punch_items').insert({
+    id: randomUUID(),
+    projectId,
+    title: parsed.data.title.trim(),
+    sortOrder: nextSort,
+    updatedAt: new Date().toISOString(),
+  })
+  if (error) return { error: { _form: [error.message] } }
+  revalidatePath(`/projects/${projectId}`)
+  return {}
+}
+
+export async function togglePunchItem(itemId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: row } = await supabase
+    .from('project_punch_items').select('id, projectId, isDone').eq('id', itemId).single()
+  if (!row) return { error: { _form: ['Eintrag nicht gefunden.'] } }
+  const isDone = !row.isDone
+  const { error } = await supabase.from('project_punch_items').update({
+    isDone,
+    doneAt: isDone ? new Date().toISOString() : null,
+    updatedAt: new Date().toISOString(),
+  }).eq('id', itemId)
+  if (error) return { error: { _form: [error.message] } }
+  revalidatePath(`/projects/${row.projectId}`)
+  return {}
+}
+
+export async function deletePunchItem(itemId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: row } = await supabase
+    .from('project_punch_items').select('projectId').eq('id', itemId).single()
+  const { error } = await supabase.from('project_punch_items').delete().eq('id', itemId)
+  if (error) return { error: { _form: [error.message] } }
+  if (row?.projectId) revalidatePath(`/projects/${row.projectId}`)
+  return {}
+}
+
+export async function insertDefaultPunchItems(projectId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const defaults = [
+    'Netz korrekt gespannt?',
+    'Beleuchtung vollständig getestet?',
+    'Türen / Zugänge funktionsfähig?',
+    'Oberflächenbelag ohne Beschädigung?',
+    'Entwässerung geprüft?',
+    'Reinigung nach Montage durchgeführt?',
+    'Übergabedokumentation übergeben?',
+  ]
+  const rows = defaults.map((title, idx) => ({
+    id: randomUUID(),
+    projectId,
+    title,
+    sortOrder: idx,
+    updatedAt: new Date().toISOString(),
+  }))
+  const { error } = await supabase.from('project_punch_items').insert(rows)
+  if (error) return { error: { _form: [error.message] } }
+  revalidatePath(`/projects/${projectId}`)
+  return {}
+}
+
+// ─── Material-Checklist ──────────────────────────────────────────────────────
+
+export async function addMaterialItem(projectId: string, input: MaterialItemInput): Promise<ActionResult> {
+  const parsed = materialItemSchema.safeParse(input)
+  if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
+  const supabase = await createClient()
+  const { data: existing } = await supabase
+    .from('project_material_items').select('sortOrder').eq('projectId', projectId)
+    .order('sortOrder', { ascending: false }).limit(1)
+  const nextSort = (existing?.[0]?.sortOrder ?? -1) + 1
+  const { error } = await supabase.from('project_material_items').insert({
+    id: randomUUID(),
+    projectId,
+    title: parsed.data.title.trim(),
+    quantity: parsed.data.quantity ?? null,
+    unit: parsed.data.unit?.trim() || null,
+    notes: parsed.data.notes?.trim() || null,
+    sortOrder: nextSort,
+    updatedAt: new Date().toISOString(),
+  })
+  if (error) return { error: { _form: [error.message] } }
+  revalidatePath(`/projects/${projectId}`)
+  return {}
+}
+
+export async function toggleMaterialOrdered(itemId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: row } = await supabase
+    .from('project_material_items').select('projectId, isOrdered').eq('id', itemId).single()
+  if (!row) return { error: { _form: ['Eintrag nicht gefunden.'] } }
+  const { error } = await supabase.from('project_material_items').update({
+    isOrdered: !row.isOrdered,
+    updatedAt: new Date().toISOString(),
+  }).eq('id', itemId)
+  if (error) return { error: { _form: [error.message] } }
+  revalidatePath(`/projects/${row.projectId}`)
+  return {}
+}
+
+export async function toggleMaterialArrived(itemId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: row } = await supabase
+    .from('project_material_items').select('projectId, isArrived').eq('id', itemId).single()
+  if (!row) return { error: { _form: ['Eintrag nicht gefunden.'] } }
+  const { error } = await supabase.from('project_material_items').update({
+    isArrived: !row.isArrived,
+    updatedAt: new Date().toISOString(),
+  }).eq('id', itemId)
+  if (error) return { error: { _form: [error.message] } }
+  revalidatePath(`/projects/${row.projectId}`)
+  return {}
+}
+
+export async function deleteMaterialItem(itemId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: row } = await supabase
+    .from('project_material_items').select('projectId').eq('id', itemId).single()
+  const { error } = await supabase.from('project_material_items').delete().eq('id', itemId)
+  if (error) return { error: { _form: [error.message] } }
+  if (row?.projectId) revalidatePath(`/projects/${row.projectId}`)
   return {}
 }

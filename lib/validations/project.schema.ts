@@ -9,6 +9,7 @@ export const projectSchema = z.object({
   companyId: z.string().optional(),
   contactId: z.string().optional(),
   teamMemberId: z.string().optional(),
+  buildTeamId: z.string().optional(),
 
   startDate: z.string().optional(),
   plannedEndDate: z.string().optional(),
@@ -32,3 +33,18 @@ export const milestoneSchema = z.object({
 })
 
 export type MilestoneInput = z.infer<typeof milestoneSchema>
+
+export const punchItemSchema = z.object({
+  title: z.string().min(1, 'Titel erforderlich'),
+  sortOrder: z.coerce.number().int().default(0),
+})
+export type PunchItemInput = z.infer<typeof punchItemSchema>
+
+export const materialItemSchema = z.object({
+  title: z.string().min(1, 'Bezeichnung erforderlich'),
+  quantity: z.coerce.number().optional(),
+  unit: z.string().optional(),
+  notes: z.string().optional(),
+  sortOrder: z.coerce.number().int().default(0),
+})
+export type MaterialItemInput = z.infer<typeof materialItemSchema>
