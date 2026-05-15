@@ -614,7 +614,7 @@ export default async function DashboardPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
-            <a href="#" className="text-xs text-blue-600 hover:underline">Alle →</a>
+            <a href="/deals" className="text-xs text-blue-600 hover:underline">Alle →</a>
           </CardHeader>
           <CardContent>
             {recentFeed.length === 0 ? (
@@ -656,10 +656,19 @@ const FEED_COLOR: Record<string, string> = {
   note_added:     'text-amber-600 bg-amber-50',
 }
 
+const ENTITY_ROUTE: Record<string, string> = {
+  deal: 'deals',
+  contact: 'contacts',
+  company: 'companies',
+  project: 'projects',
+  quote: 'quotes',
+  task: 'tasks',
+}
+
 function FeedItemRow({ item }: { item: FeedItem }) {
   const Icon = FEED_ICON[item.action] ?? Activity
   const color = FEED_COLOR[item.action] ?? 'text-slate-500 bg-slate-100'
-  const entityPath = `/${item.entityType}s/${item.entityId}`
+  const entityPath = `/${ENTITY_ROUTE[item.entityType] ?? `${item.entityType}s`}/${item.entityId}`
   const summary = item.summary
     ? item.summary.length > 80 ? item.summary.slice(0, 80) + '…' : item.summary
     : null
