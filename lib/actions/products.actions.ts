@@ -124,13 +124,20 @@ export async function importProductsCsv(csvText: string): Promise<CsvImportResul
     return { imported: 0, updated: 0, skipped: 0, errors: ['CSV leer oder keine Datenzeilen.'] }
   }
 
-  // Delimiter auto-detektieren: Komma (Standard) oder Semikolon (Excel deutsch)
-  const delimiter = detectDelimiter(lines[0])
-  const headers = parseCsvLine(lines[0], delimiter).map((h) => h.toLowerCase().trim())
-  const colIdx = (name: string) => headers.indexOf(name)
-  if (colIdx('name') === -1) {
+  // Delimiter auto-detektieren anhand der Header-Zeile (nicht zwingend lines[0] – Excel fügt oft
+  // eine Titelzeile vor den eigentlichen Spaltennamen ein)
+  const delimiter = detectDelimiter(lines.slice(0, 5).join('\n'))
+
+  // Header-Zeile finden: erste Zeile, die "name" als Spalte enthält
+  const headerLineIdx = lines.findIndex((l) => {
+    const cols = parseCsvLine(l, delimiter).map((c) => c.toLowerCase().trim())
+    return cols.includes('name')
+  })
+  if (headerLineIdx === -1) {
     return { imported: 0, updated: 0, skipped: 0, errors: ['Pflichtfeld "name" fehlt im CSV-Header.'] }
   }
+  const headers = parseCsvLine(lines[headerLineIdx], delimiter).map((h) => h.toLowerCase().trim())
+  const colIdx = (name: string) => headers.indexOf(name)
 
   let imported = 0, updated = 0, skipped = 0
   const errors: string[] = []
@@ -143,10 +150,11 @@ export async function importProductsCsv(csvText: string): Promise<CsvImportResul
     nameMap.set(p.name.toLowerCase(), p.id)
   }
 
-  for (let i = 0; i < lines.length - 1; i++) {
-    const lineNum = i + 2
+  const dataLines = lines.slice(headerLineIdx + 1)
+  for (let i = 0; i < dataLines.length; i++) {
+    const lineNum = headerLineIdx + i + 2
     try {
-      const cols = parseCsvLine(lines[i + 1], delimiter)
+      const cols = parseCsvLine(dataLines[i], delimiter)
       const get = (name: string) => {
         const idx = colIdx(name)
         return idx >= 0 ? (cols[idx] ?? '').trim() : ''
@@ -161,9 +169,9 @@ export async function importProductsCsv(csvText: string): Promise<CsvImportResul
         sku: sku || null,
         category: get('category') || null,
         unit: get('unit') || 'Stück',
-        defaultPriceNet: parseFloat(get('defaultpricenet') || '0') || 0,
-        purchasePriceNet: parseFloat(get('purchasepricenet') || '0') || 0,
-        defaultVatRate: parseFloat(get('defaultvatrate') || '19') || 19,
+        defaultPriceNet: parseFloat((get('defaultpricenet') || '0').replace(',', '.')) || 0,
+        purchasePriceNet: parseFloat((get('purchasepricenet') || '0').replace(',', '.')) || 0,
+        defaultVatRate: parseFloat((get('defaultvatrate') || '19').replace(',', '.')) || 19,
         imageUrl: get('imageurl') || null,
         isActive: (get('isactive') || 'true').toLowerCase() !== 'false',
         updatedAt: new Date().toISOString(),
