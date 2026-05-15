@@ -37,7 +37,7 @@ function matchesTrigger(rule: WorkflowRule, context: WorkflowContext): boolean {
     case 'deal_stage_changed':
       return cfg.stageId == null || cfg.stageId === context.stageId
     case 'quote_expiring':
-      return cfg.daysBeforeExpiry == null || cfg.daysBeforeExpiry === context.daysUntilExpiry
+      return cfg.daysBeforeExpiry == null || Number(cfg.daysBeforeExpiry) === context.daysUntilExpiry
     case 'deal_inactive':
       return (
         cfg.days == null ||
@@ -58,9 +58,9 @@ function todayPlusDays(days: number): string {
 
 async function executeAction(
   rule: WorkflowRule,
-  context: WorkflowContext
+  context: WorkflowContext,
+  supabase: Awaited<ReturnType<typeof createClient>>
 ): Promise<void> {
-  const supabase = await createClient()
   const cfg = rule.actionConfig
   const now = new Date().toISOString()
 
@@ -125,7 +125,7 @@ export async function runWorkflows(
   for (const rule of (rules ?? []) as WorkflowRule[]) {
     if (!matchesTrigger(rule, context)) continue
     try {
-      await executeAction(rule, context)
+      await executeAction(rule, context, supabase)
     } catch (err) {
       console.error('Workflow rule failed:', rule.id, err)
     }
