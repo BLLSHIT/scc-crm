@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { getProjectByShareToken } from '@/lib/db/projects'
 import { CheckCircle2, Circle, MapPin, CalendarClock, Building2, ClipboardList } from 'lucide-react'
+import { SharePasswordForm } from '@/components/projects/SharePasswordForm'
 
 function formatDate(d: string | null | undefined) {
   if (!d) return '—'
@@ -33,7 +35,7 @@ export default async function ShareProjectPage({
   const { data: projectRaw } = await supabase
     .from('projects')
     .select(`
-      id, name, status, startDate, plannedEndDate, locationStreet, locationZip, locationCity, locationCountry,
+      id, name, status, startDate, plannedEndDate, locationStreet, locationZip, locationCity, locationCountry, shareLinkPassword,
       company:companies(id, name),
       teamMember:team_members(id, firstName, lastName)
     `)
@@ -41,6 +43,15 @@ export default async function ShareProjectPage({
     .single()
 
   if (!projectRaw) notFound()
+
+  const sharePw = (projectRaw as any).shareLinkPassword as string | null
+  if (sharePw) {
+    const cookieStore = await cookies()
+    const auth = cookieStore.get(`share_auth_${token}`)
+    if (auth?.value !== 'ok') {
+      return <SharePasswordForm token={token} />
+    }
+  }
 
   const [milestonesRes, punchRes] = await Promise.all([
     supabase.from('project_milestones').select('id, title, completedAt, dueDate, sortOrder')

@@ -9,11 +9,13 @@ import { useRouter } from 'next/navigation'
 interface Props {
   projectId: string
   currentToken: string | null
+  currentPassword: string | null
 }
 
-export function ShareLinkPanel({ projectId, currentToken }: Props) {
+export function ShareLinkPanel({ projectId, currentToken, currentPassword }: Props) {
   const router = useRouter()
   const [token, setToken] = useState(currentToken)
+  const [password, setPassword] = useState(currentPassword)
   const [copied, setCopied] = useState(false)
   const [, startTransition] = useTransition()
 
@@ -24,7 +26,11 @@ export function ShareLinkPanel({ projectId, currentToken }: Props) {
   function handleGenerate() {
     startTransition(async () => {
       const res = await generateShareToken(projectId)
-      if (res.token) { setToken(res.token); router.refresh() }
+      if (res.token) {
+        setToken(res.token)
+        if (res.password) setPassword(res.password)
+        router.refresh()
+      }
     })
   }
 
@@ -33,6 +39,7 @@ export function ShareLinkPanel({ projectId, currentToken }: Props) {
     startTransition(async () => {
       await revokeShareToken(projectId)
       setToken(null)
+      setPassword(null)
       router.refresh()
     })
   }
@@ -69,6 +76,19 @@ export function ShareLinkPanel({ projectId, currentToken }: Props) {
                 {copied ? <CheckCheck className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
+            {password && (
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                <span className="text-xs text-amber-700 font-medium">Passwort:</span>
+                <span className="font-mono text-sm font-bold text-amber-900 tracking-widest">{password}</span>
+                <button type="button" onClick={() => navigator.clipboard.writeText(password)}
+                  className="ml-auto p-1 hover:bg-amber-100 rounded">
+                  <Copy className="w-3.5 h-3.5 text-amber-700" />
+                </button>
+              </div>
+            )}
+            {password && (
+              <p className="text-xs text-amber-600">Teile Link UND Passwort mit dem Kunden.</p>
+            )}
             <p className="text-xs text-slate-500">
               Dieser Link gibt Kunden einen schreibgeschützten Überblick über Status und Meilensteine — ohne Login.
             </p>

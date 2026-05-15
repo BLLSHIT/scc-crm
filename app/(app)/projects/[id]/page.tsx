@@ -385,7 +385,7 @@ export default async function ProjectDetailPage({
               </Card>
             )}
 
-            <ShareLinkPanel projectId={id} currentToken={project.shareToken ?? null} />
+            <ShareLinkPanel projectId={id} currentToken={project.shareToken ?? null} currentPassword={project.shareLinkPassword ?? null} />
 
             <NoteComposer entityType="project" entityId={id} />
             <ActivityTimeline items={activities} currentUserId={currentUserId ?? undefined} />

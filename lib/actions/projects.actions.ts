@@ -338,17 +338,18 @@ export async function deleteProjectAttachment(id: string): Promise<{ error?: str
 
 // ─── Share-Token ─────────────────────────────────────────────────────────────
 
-export async function generateShareToken(projectId: string): Promise<{ token?: string; error?: string }> {
+export async function generateShareToken(projectId: string): Promise<{ token?: string; password?: string; error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Nicht autorisiert.' }
   const token = randomUUID()
+  const password = Math.random().toString(36).substring(2, 8).toUpperCase()
   const { error } = await supabase.from('projects')
-    .update({ shareToken: token, updatedAt: new Date().toISOString() })
+    .update({ shareToken: token, shareLinkPassword: password, updatedAt: new Date().toISOString() })
     .eq('id', projectId)
   if (error) return { error: error.message }
   revalidatePath(`/projects/${projectId}`)
-  return { token }
+  return { token, password }
 }
 
 export async function revokeShareToken(projectId: string): Promise<ActionResult> {
@@ -356,7 +357,7 @@ export async function revokeShareToken(projectId: string): Promise<ActionResult>
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
   const { error } = await supabase.from('projects')
-    .update({ shareToken: null, updatedAt: new Date().toISOString() })
+    .update({ shareToken: null, shareLinkPassword: null, updatedAt: new Date().toISOString() })
     .eq('id', projectId)
   if (error) return { error: { _form: [error.message] } }
   revalidatePath(`/projects/${projectId}`)
