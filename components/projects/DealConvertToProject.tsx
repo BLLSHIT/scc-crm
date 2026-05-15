@@ -25,7 +25,7 @@ export function DealConvertToProject({ dealId, dealTitle }: { dealId: string; de
 
   return (
     <div className="space-y-1">
-      <Button type="button" size="sm" onClick={convert} disabled={pending}>
+      <Button type="button" onClick={convert} disabled={pending}>
         <FolderKanban className="w-4 h-4 mr-2" />
         {pending ? 'Wird umgewandelt…' : 'In Projekt umwandeln'}
       </Button>

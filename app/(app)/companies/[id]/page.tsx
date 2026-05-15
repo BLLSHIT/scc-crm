@@ -6,6 +6,7 @@ import { getCompanyById } from '@/lib/db/companies'
 import { getActivityLogs } from '@/lib/db/activity-logs'
 import { deleteCompany } from '@/lib/actions/companies.actions'
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
+import { NoteComposer } from '@/components/activity/NoteComposer'
 import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,11 +23,13 @@ export default async function CompanyDetailPage({
   const { id } = await params
 
   let profile: Profile | null = null
+  let currentUserId: string | null = null
   try {
     const supabase = await createClient()
     const { data: userData, error: authError } = await supabase.auth.getUser()
     if (authError) throw authError
     if (!userData.user) redirect('/login')
+    currentUserId = userData.user.id
     const profileResult = await supabase
       .from('profiles')
       .select('*')
@@ -263,7 +266,8 @@ export default async function CompanyDetailPage({
               </CardContent>
             </Card>
 
-            <ActivityTimeline items={activities} />
+            <NoteComposer entityType="company" entityId={id} />
+            <ActivityTimeline items={activities} currentUserId={currentUserId ?? undefined} />
           </div>
         </main>
       </div>

@@ -111,6 +111,7 @@ export async function getDealsForPipeline(pipelineId: string) {
 
     return {
       ...deal,
+      scc: (Array.isArray(deal.teamMember) ? (deal.teamMember[0] as { firstName: string; lastName: string } | undefined) ?? null : (deal.teamMember as { firstName: string; lastName: string } | null) ?? null),
       primaryContactName: primaryContactByDeal.get(deal.id) ?? null,
       quotesCount: quotes.length,
       acceptedQuoteTotal: acceptedQuote ? Number(acceptedQuote.totalGross) : null,

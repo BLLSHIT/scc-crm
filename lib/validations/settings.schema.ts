@@ -9,6 +9,7 @@ export const settingsSchema = z.object({
   companyEmail: z.string().email('Ungültige E-Mail').optional().or(z.literal('')),
   companyPhone: z.string().optional(),
   companyWebsite: z.string().optional(),
+  companyRegisterNumber: z.string().optional(),
   taxNumber: z.string().optional(),
   ustId: z.string().optional(),
   bankName: z.string().optional(),

@@ -125,6 +125,10 @@ export function SettingsForm({ defaultValues, onSubmit }: Props) {
             </div>
           </div>
           <div className="space-y-1.5">
+            <Label htmlFor="companyRegisterNumber">Handelsregisternummer</Label>
+            <Input id="companyRegisterNumber" placeholder="HRB …" {...register('companyRegisterNumber')} />
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="bankName">Bank</Label>
             <Input id="bankName" {...register('bankName')} />
           </div>

@@ -40,6 +40,7 @@ export default async function SettingsPage() {
             companyEmail: settings.companyEmail ?? '',
             companyPhone: settings.companyPhone ?? '',
             companyWebsite: settings.companyWebsite ?? '',
+            companyRegisterNumber: settings.companyRegisterNumber ?? '',
             taxNumber: settings.taxNumber ?? '',
             ustId: settings.ustId ?? '',
             bankName: settings.bankName ?? '',

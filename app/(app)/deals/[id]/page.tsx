@@ -7,6 +7,7 @@ import { getQuotesByDealId } from '@/lib/db/quotes'
 import { getActivityLogs } from '@/lib/db/activity-logs'
 import { deleteDeal } from '@/lib/actions/deals.actions'
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
+import { NoteComposer } from '@/components/activity/NoteComposer'
 import { DealAttachmentsCard } from '@/components/attachments/DealAttachmentsCard'
 import { getDealAttachments } from '@/lib/db/attachments'
 import { DealConvertToProject } from '@/components/projects/DealConvertToProject'
@@ -52,11 +53,13 @@ export default async function DealDetailPage({
   const { id } = await params
 
   let profile: Profile | null = null
+  let currentUserId: string | null = null
   try {
     const supabase = await createClient()
     const { data: userData, error: authError } = await supabase.auth.getUser()
     if (authError) throw authError
     if (!userData.user) redirect('/login')
+    currentUserId = userData.user.id
     const profileResult = await supabase
       .from('profiles')
       .select('*')
@@ -234,7 +237,8 @@ export default async function DealDetailPage({
 
             <DealAttachmentsCard dealId={id} initialAttachments={attachments} />
 
-            <ActivityTimeline items={activities} />
+            <NoteComposer entityType="deal" entityId={id} />
+            <ActivityTimeline items={activities} currentUserId={currentUserId ?? undefined} />
           </div>
 
           <div className="space-y-6">
@@ -342,6 +346,26 @@ export default async function DealDetailPage({
                     ))}
                   </ul>
                 )}
+                {(() => {
+                  const accepted = dealQuotes.find((q) => q.status === 'accepted')
+                  if (!accepted) return null
+                  return (
+                    <div className="mt-3 pt-3 border-t border-slate-100 space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-500">Auftragswert (akzept. Angebot)</span>
+                        <span className="font-semibold text-emerald-700">
+                          {formatCurrency(Number(accepted.totalGross ?? 0), 'EUR')}
+                        </span>
+                      </div>
+                      {deal.value != null && (
+                        <div className="flex items-center justify-between text-xs text-slate-400">
+                          <span>Dealwert</span>
+                          <span>{formatCurrency(deal.value, deal.currency ?? 'EUR')}</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
               </CardContent>
             </Card>
 

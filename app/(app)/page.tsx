@@ -82,13 +82,17 @@ export default async function DashboardPage({
     const { data: openDeals } = openStageIds.length > 0
       ? await supabase
           .from('deals')
-          .select('id, value, probability, stageId')
+          .select('id, value, probability, stageId, quotes:quotes(totalGross, status)')
           .in('stageId', openStageIds)
       : { data: [] as any[] }
-    const od = openDeals ?? []
-    openDealsTotal = od.reduce((s: number, d: any) => s + Number(d.value ?? 0), 0)
+    const od = (openDeals ?? []).map((d: any) => {
+      const acceptedQuote = (d.quotes ?? []).find((q: any) => q.status === 'accepted')
+      const effectiveValue = acceptedQuote != null ? Number(acceptedQuote.totalGross ?? 0) : Number(d.value ?? 0)
+      return { ...d, effectiveValue }
+    })
+    openDealsTotal = od.reduce((s: number, d: any) => s + d.effectiveValue, 0)
     weightedForecast = od.reduce(
-      (s: number, d: any) => s + Number(d.value ?? 0) * (Number(d.probability ?? 0) / 100),
+      (s: number, d: any) => s + d.effectiveValue * (Number(d.probability ?? 0) / 100),
       0
     )
 
@@ -124,7 +128,7 @@ export default async function DashboardPage({
     for (const d of od) {
       const entry = stageMap.get(d.stageId)
       if (entry) {
-        entry.total += Number(d.value ?? 0)
+        entry.total += d.effectiveValue
         entry.count += 1
       }
     }

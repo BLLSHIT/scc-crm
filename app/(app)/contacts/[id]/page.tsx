@@ -6,6 +6,7 @@ import { getContactById } from '@/lib/db/contacts'
 import { getActivityLogs } from '@/lib/db/activity-logs'
 import { deleteContact } from '@/lib/actions/contacts.actions'
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
+import { NoteComposer } from '@/components/activity/NoteComposer'
 import { Header } from '@/components/layout/Header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -74,6 +75,8 @@ export default async function ContactDetailPage({
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Auth/Profile" err={err} />
   }
+
+  const currentUserId = user?.id ?? null
 
   // Step 2: contact
   let contact: any
@@ -298,7 +301,8 @@ export default async function ContactDetailPage({
               </CardContent>
             </Card>
 
-            <ActivityTimeline items={activities} />
+            <NoteComposer entityType="contact" entityId={id} />
+            <ActivityTimeline items={activities} currentUserId={currentUserId ?? undefined} />
           </div>
         </main>
       </div>

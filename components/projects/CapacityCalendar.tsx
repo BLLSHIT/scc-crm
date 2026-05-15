@@ -1,5 +1,7 @@
 'use client'
+import { useState } from 'react'
 import Link from 'next/link'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface ProjectSlim {
   id: string
@@ -25,113 +27,200 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled:    'bg-red-100 text-red-500',
 }
 
-function getMonths(count: number): { year: number; month: number; label: string }[] {
-  const result = []
-  const now = new Date()
-  for (let i = 0; i < count; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
-    result.push({
-      year: d.getFullYear(),
-      month: d.getMonth(),
-      label: d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
-    })
-  }
-  return result
+const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+
+function toDateOnly(dateStr: string): Date {
+  // Parse as local date (YYYY-MM-DD) to avoid timezone shifts
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d)
 }
 
-function isProjectInMonth(p: ProjectSlim, year: number, month: number): boolean {
-  const start = p.startDate ? new Date(p.startDate) : null
-  const end = p.actualEndDate
-    ? new Date(p.actualEndDate)
-    : p.plannedEndDate ? new Date(p.plannedEndDate) : null
-  const monthStart = new Date(year, month, 1)
-  const monthEnd = new Date(year, month + 1, 0)
-  if (!start && !end) return false
-  if (start && start > monthEnd) return false
-  if (end && end < monthStart) return false
-  return true
+function isProjectActiveOnDay(project: ProjectSlim, date: Date): boolean {
+  if (!project.startDate) return false
+  const end = project.actualEndDate ?? project.plannedEndDate
+  if (!end) return false
+  const start = toDateOnly(project.startDate)
+  const endDate = toDateOnly(end)
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  return day >= start && day <= endDate
+}
+
+function getCalendarDays(year: number, month: number): (Date | null)[] {
+  // Returns an array of dates for the full calendar grid (Mon–Sun rows)
+  // Pads with nulls for days outside the month
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+
+  // Monday-based: 0=Mon ... 6=Sun
+  // JS getDay(): 0=Sun, 1=Mon ... 6=Sat
+  const startDow = (firstDay.getDay() + 6) % 7 // 0=Mon
+  const endDow = (lastDay.getDay() + 6) % 7     // 0=Mon
+
+  const days: (Date | null)[] = []
+
+  // Leading nulls
+  for (let i = 0; i < startDow; i++) days.push(null)
+
+  // Actual days
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    days.push(new Date(year, month, d))
+  }
+
+  // Trailing nulls to complete the last week
+  const trailing = endDow === 6 ? 0 : 6 - endDow
+  for (let i = 0; i < trailing; i++) days.push(null)
+
+  return days
 }
 
 export function CapacityCalendar({ projects }: Props) {
-  const months = getMonths(5)
+  const today = new Date()
+  const [viewYear, setViewYear] = useState(today.getFullYear())
+  const [viewMonth, setViewMonth] = useState(today.getMonth())
 
-  // Build team rows: group by buildTeam
-  const teamMap = new Map<string, { id: string; name: string }>()
-  teamMap.set('_none', { id: '_none', name: 'Kein Bauteam' })
-  for (const p of projects) {
-    if (p.buildTeam) {
-      teamMap.set(p.buildTeam.id, p.buildTeam)
+  function goBack() {
+    if (viewMonth === 0) {
+      setViewYear(y => y - 1)
+      setViewMonth(11)
+    } else {
+      setViewMonth(m => m - 1)
     }
   }
-  const teams = Array.from(teamMap.values())
 
-  const activeProjects = projects.filter((p) => !['cancelled'].includes(p.status))
+  function goForward() {
+    if (viewMonth === 11) {
+      setViewYear(y => y + 1)
+      setViewMonth(0)
+    } else {
+      setViewMonth(m => m + 1)
+    }
+  }
+
+  function goToday() {
+    setViewYear(today.getFullYear())
+    setViewMonth(today.getMonth())
+  }
+
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString('de-DE', {
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const calendarDays = getCalendarDays(viewYear, viewMonth)
+  const weeks: (Date | null)[][] = []
+  for (let i = 0; i < calendarDays.length; i += 7) {
+    weeks.push(calendarDays.slice(i, i + 7))
+  }
+
+  const activeProjects = projects.filter(p => p.status !== 'cancelled')
+
+  const isCurrentMonth =
+    viewYear === today.getFullYear() && viewMonth === today.getMonth()
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-separate border-spacing-0">
-        <thead>
-          <tr>
-            <th className="text-left px-4 py-3 bg-slate-50 border border-slate-200 rounded-tl-lg font-medium text-slate-600 w-48">
-              Bauteam
-            </th>
-            {months.map((m, i) => (
-              <th
-                key={`${m.year}-${m.month}`}
-                className={`px-3 py-3 bg-slate-50 border-t border-b border-r border-slate-200 font-medium text-slate-600 text-center ${
-                  i === months.length - 1 ? 'rounded-tr-lg' : ''
-                } ${m.year === new Date().getFullYear() && m.month === new Date().getMonth() ? 'bg-blue-50' : ''}`}
-              >
-                {m.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {teams.map((team, teamIdx) => {
-            const teamProjects = team.id === '_none'
-              ? activeProjects.filter((p) => !p.buildTeamId)
-              : activeProjects.filter((p) => p.buildTeam?.id === team.id)
+    <div className="space-y-4">
+      {/* Navigation header */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={goBack}
+          className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 transition-colors"
+          aria-label="Vorheriger Monat"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
 
-            return (
-              <tr key={team.id}>
-                <td className={`px-4 py-3 border-l border-b border-r border-slate-200 font-medium text-slate-700 bg-white ${
-                  teamIdx === teams.length - 1 ? 'rounded-bl-lg' : ''
-                }`}>
-                  {team.name}
-                </td>
-                {months.map((m, mIdx) => {
-                  const cell = teamProjects.filter((p) => isProjectInMonth(p, m.year, m.month))
-                  return (
-                    <td
-                      key={`${m.year}-${m.month}`}
-                      className={`px-2 py-2 border-b border-r border-slate-200 bg-white align-top min-w-[140px] ${
-                        teamIdx === teams.length - 1 && mIdx === months.length - 1 ? 'rounded-br-lg' : ''
-                      } ${m.year === new Date().getFullYear() && m.month === new Date().getMonth() ? 'bg-blue-50/30' : ''}`}
-                    >
-                      <div className="space-y-1">
-                        {cell.map((p) => (
+        <h2 className="text-xl font-semibold text-slate-800 min-w-[180px] text-center capitalize">
+          {monthLabel}
+        </h2>
+
+        <button
+          onClick={goForward}
+          className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 transition-colors"
+          aria-label="Nächster Monat"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        {!isCurrentMonth && (
+          <button
+            onClick={goToday}
+            className="ml-2 px-3 py-1.5 text-sm rounded-md border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+          >
+            Heute
+          </button>
+        )}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="border border-slate-200 rounded-lg overflow-hidden">
+        {/* Weekday header */}
+        <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
+          {WEEKDAY_LABELS.map(label => (
+            <div
+              key={label}
+              className="px-2 py-2 text-xs font-medium text-slate-500 text-center"
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* Week rows */}
+        {weeks.map((week, wi) => (
+          <div key={wi} className="grid grid-cols-7 border-b border-slate-200 last:border-b-0">
+            {week.map((day, di) => {
+              const isToday =
+                day !== null &&
+                day.getDate() === today.getDate() &&
+                day.getMonth() === today.getMonth() &&
+                day.getFullYear() === today.getFullYear()
+
+              const dayProjects = day
+                ? activeProjects.filter(p => isProjectActiveOnDay(p, day))
+                : []
+
+              return (
+                <div
+                  key={di}
+                  className={`min-h-[80px] p-1.5 border-r border-slate-200 last:border-r-0 align-top ${
+                    day === null ? 'bg-slate-50/60' : 'bg-white'
+                  }`}
+                >
+                  {day !== null && (
+                    <>
+                      <div className="flex justify-end mb-1">
+                        <span
+                          className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full ${
+                            isToday
+                              ? 'bg-blue-500 text-white'
+                              : 'text-slate-500'
+                          }`}
+                        >
+                          {day.getDate()}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {dayProjects.map(p => (
                           <Link
                             key={p.id}
                             href={`/projects/${p.id}`}
-                            className={`block px-2 py-1 rounded text-xs truncate max-w-full hover:opacity-80 ${STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'}`}
+                            className={`block px-1.5 py-0.5 rounded text-[11px] truncate leading-4 hover:opacity-80 ${
+                              STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'
+                            }`}
                             title={p.name}
                           >
                             {p.name}
                           </Link>
                         ))}
-                        {cell.length === 0 && (
-                          <span className="text-slate-200 text-xs">—</span>
-                        )}
                       </div>
-                    </td>
-                  )
-                })}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
