@@ -70,11 +70,13 @@ export async function reorderPhases(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Nicht autorisiert.' }
 
-  await Promise.all(
+  const results = await Promise.all(
     orderedIds.map((id, idx) =>
       supabase.from('acceptance_phases').update({ sortOrder: idx, updatedAt: new Date().toISOString() }).eq('id', id)
     )
   )
+  const firstError = results.find((r) => r.error)
+  if (firstError?.error) return { error: firstError.error.message }
   revalidate(projectId)
   return {}
 }
@@ -181,7 +183,9 @@ export async function deleteItemPhoto(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Nicht autorisiert.' }
 
-  await supabase.storage.from('project-attachments').remove([storagePath])
+  const { error: storageError } = await supabase.storage.from('project-attachments').remove([storagePath])
+  if (storageError) console.error('[deleteItemPhoto] storage error:', storageError)
+  // Still delete DB record even if storage failed (prefer consistency)
   const { error } = await supabase.from('acceptance_item_photos').delete().eq('id', photoId)
   if (error) return { error: error.message }
   revalidate(projectId)
