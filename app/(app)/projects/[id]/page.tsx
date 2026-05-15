@@ -16,7 +16,7 @@ import { ProjectAttachmentsCard } from '@/components/projects/ProjectAttachments
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
 import { NoteComposer } from '@/components/activity/NoteComposer'
 import { ShareLinkPanel } from '@/components/projects/ShareLinkPanel'
-import { Pencil, Building2, User, UserCheck, Mail, Phone, FileText, MapPin, Receipt, HardHat, Download, Send } from 'lucide-react'
+import { Pencil, Building2, User, UserCheck, Mail, Phone, FileText, MapPin, Receipt, HardHat, Download, Send, ClipboardCheck } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
@@ -119,6 +119,12 @@ export default async function ProjectDetailPage({
               >
                 <Download className="w-4 h-4 mr-2" />Übergabe-PDF
               </a>
+              <Link
+                href={`/projects/${id}/protocol`}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                <ClipboardCheck className="w-4 h-4" />Abnahmeprotokoll
+              </Link>
               <Link href={`/projects/${id}/edit`}
                 className={buttonVariants({ size: 'sm', variant: 'outline' })}>
                 <Pencil className="w-4 h-4 mr-2" />Bearbeiten
