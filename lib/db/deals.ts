@@ -103,11 +103,13 @@ export async function getDealsForPipeline(pipelineId: string) {
 
     let marginPercent: number | null = null
     let marginEuro: number | null = null
-    if (acceptedQuote && Number(acceptedQuote.totalGross) > 0) {
-      const totalGross = Number(acceptedQuote.totalGross)
+    // Compute margin from accepted quote, or fall back to latest other quote
+    const quoteForMargin = acceptedQuote ?? latestOtherQuote
+    if (quoteForMargin && Number(quoteForMargin.totalGross) > 0) {
+      const totalGross = Number(quoteForMargin.totalGross)
       let totalEk = 0
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const li of ((acceptedQuote.quote_line_items as any[]) ?? [])) {
+      for (const li of ((quoteForMargin.quote_line_items as any[]) ?? [])) {
         totalEk += Number(li.product?.purchasePriceNet ?? 0) * Number(li.quantity ?? 1)
       }
       // Kein EK eingetragen → Marge = 0
