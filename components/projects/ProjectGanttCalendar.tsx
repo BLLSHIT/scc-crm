@@ -56,14 +56,24 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'S
 export function ProjectGanttCalendar({ projects }: Props) {
   const [offset, setOffset] = useState(0)
 
+  const today = useMemo(() => new Date(), [])
+
   const windowStart = useMemo(() => {
     const d = startOfMonth(new Date())
     return addMonths(d, offset)
   }, [offset])
 
   const windowEnd = useMemo(() => endOfMonth(addMonths(windowStart, 5)), [windowStart])
-  const totalMs = windowEnd.getTime() - windowStart.getTime()
-  const todayPct = pct(new Date(), windowStart, totalMs)
+
+  const totalMs = useMemo(
+    () => windowEnd.getTime() - windowStart.getTime(),
+    [windowStart, windowEnd]
+  )
+
+  const todayPct = useMemo(
+    () => pct(today, windowStart, totalMs),
+    [today, windowStart, totalMs]
+  )
 
   const teamColourMap = useMemo(() => {
     const names = [...new Set(projects.map(p => p.buildTeam?.name).filter(Boolean) as string[])].sort()
@@ -79,7 +89,10 @@ export function ProjectGanttCalendar({ projects }: Props) {
     [projects]
   )
 
-  const months = Array.from({ length: 6 }, (_, i) => addMonths(windowStart, i))
+  const months = useMemo(
+    () => Array.from({ length: 6 }, (_, i) => addMonths(windowStart, i)),
+    [windowStart]
+  )
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -134,7 +147,7 @@ export function ProjectGanttCalendar({ projects }: Props) {
               <div
                 key={i}
                 className={`py-2 text-center text-xs font-semibold text-slate-500 border-r border-slate-100 last:border-r-0 ${
-                  m.getMonth() === new Date().getMonth() && m.getFullYear() === new Date().getFullYear()
+                  m.getMonth() === today.getMonth() && m.getFullYear() === today.getFullYear()
                     ? 'bg-blue-50 text-blue-700'
                     : ''
                 }`}
@@ -160,6 +173,31 @@ export function ProjectGanttCalendar({ projects }: Props) {
 
             const aufbau = p.milestones.find(m => m.type === 'aufbau')
             const regularMilestones = p.milestones.filter(m => m.type !== 'aufbau' && m.dueDate)
+
+            let aufbauBar: React.ReactNode = null
+            if (aufbau?.dueDate && aufbau?.endDate) {
+              const aufbauStart = new Date(aufbau.dueDate)
+              const aufbauEnd = new Date(aufbau.endDate)
+              const aLeft = pct(aufbauStart, windowStart, totalMs)
+              const aRight = 100 - pct(aufbauEnd, windowStart, totalMs)
+              if (aLeft < 100 && aRight < 100) {
+                aufbauBar = (
+                  <div
+                    className="absolute rounded"
+                    style={{
+                      left: `${Math.max(0, aLeft)}%`,
+                      right: `${Math.max(0, aRight)}%`,
+                      top: 24,
+                      height: 7,
+                      background: colour,
+                      filter: 'brightness(0.7)',
+                      minWidth: 3,
+                    }}
+                    title={`🔨 Aufbau: ${aufbauStart.toLocaleDateString('de-DE')} – ${aufbauEnd.toLocaleDateString('de-DE')}`}
+                  />
+                )
+              }
+            }
 
             return (
               <div
@@ -209,28 +247,7 @@ export function ProjectGanttCalendar({ projects }: Props) {
                     </div>
                   )}
 
-                  {aufbau?.dueDate && aufbau?.endDate && (() => {
-                    const aufbauStart = new Date(aufbau.dueDate)
-                    const aufbauEnd = new Date(aufbau.endDate)
-                    const aLeft = pct(aufbauStart, windowStart, totalMs)
-                    const aRight = 100 - pct(aufbauEnd, windowStart, totalMs)
-                    if (aLeft >= 100 || aRight >= 100) return null
-                    return (
-                      <div
-                        className="absolute rounded"
-                        style={{
-                          left: `${Math.max(0, aLeft)}%`,
-                          right: `${Math.max(0, aRight)}%`,
-                          top: 24,
-                          height: 7,
-                          background: colour,
-                          filter: 'brightness(0.7)',
-                          minWidth: 3,
-                        }}
-                        title={`🔨 Aufbau: ${aufbauStart.toLocaleDateString('de-DE')} – ${aufbauEnd.toLocaleDateString('de-DE')}`}
-                      />
-                    )
-                  })()}
+                  {aufbauBar}
 
                   {regularMilestones.map(m => {
                     const mDate = new Date(m.dueDate!)
