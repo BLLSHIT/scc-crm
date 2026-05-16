@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Trash2, CheckSquare, Square, ClipboardList } from 'lucide-react'
-import {
-  addPunchItem, togglePunchItem, deletePunchItem, insertDefaultPunchItems,
-} from '@/lib/actions/projects.actions'
+import { addPunchItem, togglePunchItem, deletePunchItem } from '@/lib/actions/projects.actions'
+import { ImportTemplateModal } from '@/components/templates/ImportTemplateModal'
 
 interface PunchItem {
   id: string
@@ -27,6 +26,7 @@ export function PunchListCard({ projectId, items }: Props) {
   const [title, setTitle] = useState('')
   const [, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [showImport, setShowImport] = useState(false)
 
   const done = items.filter((i) => i.isDone).length
   const total = items.length
@@ -57,14 +57,6 @@ export function PunchListCard({ projectId, items }: Props) {
     })
   }
 
-  function handleLoadTemplate() {
-    if (!confirm('Standard-Abnahme-Checkliste laden (7 Punkte)?')) return
-    startTransition(async () => {
-      await insertDefaultPunchItems(projectId)
-      router.refresh()
-    })
-  }
-
   const allDone = total > 0 && done === total
 
   return (
@@ -76,11 +68,9 @@ export function PunchListCard({ projectId, items }: Props) {
             Abnahme-Checkliste ({done}/{total})
           </span>
           <div className="flex items-center gap-2">
-            {total === 0 && (
-              <Button type="button" size="sm" variant="outline" onClick={handleLoadTemplate}>
-                <ClipboardList className="w-4 h-4 mr-1" />Vorlage laden
-              </Button>
-            )}
+            <Button type="button" size="sm" variant="outline" onClick={() => setShowImport(true)}>
+              <ClipboardList className="w-4 h-4 mr-1" />Vorlage laden
+            </Button>
             {!showForm && (
               <Button type="button" size="sm" onClick={() => setShowForm(true)}>
                 <Plus className="w-4 h-4 mr-1" />Punkt
@@ -159,6 +149,7 @@ export function PunchListCard({ projectId, items }: Props) {
           </ul>
         )}
       </CardContent>
+      <ImportTemplateModal projectId={projectId} open={showImport} onClose={() => setShowImport(false)} />
     </Card>
   )
 }

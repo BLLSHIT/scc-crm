@@ -13,28 +13,6 @@ import { runWorkflows } from '@/lib/workflows/engine'
 
 export type ActionResult = { error?: Record<string, string[]>; redirectTo?: string }
 
-const DEFAULT_MILESTONES = [
-  { title: 'Standortprüfung', sortOrder: 0 },
-  { title: 'Genehmigung eingeholt', sortOrder: 1 },
-  { title: 'Material bestellt', sortOrder: 2 },
-  { title: 'Aushub / Untergrund vorbereitet', sortOrder: 3 },
-  { title: 'Court-Konstruktion installiert', sortOrder: 4 },
-  { title: 'Belag verlegt', sortOrder: 5 },
-  { title: 'Beleuchtung montiert', sortOrder: 6 },
-  { title: 'Übergabe an Kunden', sortOrder: 7 },
-]
-
-async function insertDefaultMilestonesForProject(supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>, projectId: string) {
-  const rows = DEFAULT_MILESTONES.map((m) => ({
-    id: randomUUID(),
-    projectId,
-    title: m.title,
-    sortOrder: m.sortOrder,
-    updatedAt: new Date().toISOString(),
-  }))
-  await supabase.from('project_milestones').insert(rows)
-}
-
 function clean(input: ProjectInput) {
   return {
     name: input.name.trim(),
@@ -72,8 +50,6 @@ export async function createProject(input: ProjectInput): Promise<ActionResult> 
     console.error('[createProject] error:', error)
     return { error: { _form: [error.message] } }
   }
-  // Auto-Setup: Standard-Meilensteine
-  await insertDefaultMilestonesForProject(supabase, id)
   await logActivity({
     entityType: 'deal',
     entityId: parsed.data.dealId || id,
@@ -82,15 +58,6 @@ export async function createProject(input: ProjectInput): Promise<ActionResult> 
   })
   revalidatePath('/projects')
   return { redirectTo: `/projects/${id}` }
-}
-
-export async function insertDefaultMilestones(projectId: string): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
-  await insertDefaultMilestonesForProject(supabase, projectId)
-  revalidatePath(`/projects/${projectId}`)
-  return {}
 }
 
 export async function updateProject(id: string, input: ProjectInput): Promise<ActionResult> {
@@ -415,32 +382,6 @@ export async function deletePunchItem(itemId: string): Promise<ActionResult> {
   const { error } = await supabase.from('project_punch_items').delete().eq('id', itemId)
   if (error) return { error: { _form: [error.message] } }
   if (row?.projectId) revalidatePath(`/projects/${row.projectId}`)
-  return {}
-}
-
-export async function insertDefaultPunchItems(projectId: string): Promise<ActionResult> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
-  const defaults = [
-    'Netz korrekt gespannt?',
-    'Beleuchtung vollständig getestet?',
-    'Türen / Zugänge funktionsfähig?',
-    'Oberflächenbelag ohne Beschädigung?',
-    'Entwässerung geprüft?',
-    'Reinigung nach Montage durchgeführt?',
-    'Übergabedokumentation übergeben?',
-  ]
-  const rows = defaults.map((title, idx) => ({
-    id: randomUUID(),
-    projectId,
-    title,
-    sortOrder: idx,
-    updatedAt: new Date().toISOString(),
-  }))
-  const { error } = await supabase.from('project_punch_items').insert(rows)
-  if (error) return { error: { _form: [error.message] } }
-  revalidatePath(`/projects/${projectId}`)
   return {}
 }
 

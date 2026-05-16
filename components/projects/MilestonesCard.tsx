@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Trash2, CheckCircle2, Circle, CalendarClock, ListChecks } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
-import {
-  addMilestone, toggleMilestone, deleteMilestone, insertDefaultMilestones,
-} from '@/lib/actions/projects.actions'
+import { addMilestone, toggleMilestone, deleteMilestone } from '@/lib/actions/projects.actions'
+import { ImportTemplateModal } from '@/components/templates/ImportTemplateModal'
 
 interface Milestone {
   id: string
@@ -33,6 +32,7 @@ export function MilestonesCard({ projectId, milestones }: Props) {
   const [dueDate, setDueDate] = useState('')
   const [, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [showImport, setShowImport] = useState(false)
 
   const completed = milestones.filter((m) => m.completedAt).length
   const total = milestones.length
@@ -67,25 +67,15 @@ export function MilestonesCard({ projectId, milestones }: Props) {
     })
   }
 
-  function handleLoadTemplate() {
-    if (!confirm('Standard-Vorlage (8 Meilensteine) laden?')) return
-    startTransition(async () => {
-      await insertDefaultMilestones(projectId)
-      router.refresh()
-    })
-  }
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center justify-between">
           <span>Meilensteine ({completed}/{total})</span>
           <div className="flex items-center gap-2">
-            {total === 0 && (
-              <Button type="button" size="sm" variant="outline" onClick={handleLoadTemplate}>
-                <ListChecks className="w-4 h-4 mr-1" />Vorlage laden
-              </Button>
-            )}
+            <Button type="button" size="sm" variant="outline" onClick={() => setShowImport(true)}>
+              <ListChecks className="w-4 h-4 mr-1" />Vorlage laden
+            </Button>
             {!showForm && (
               <Button type="button" size="sm" onClick={() => setShowForm(true)}>
                 <Plus className="w-4 h-4 mr-1" />Meilenstein
@@ -166,6 +156,7 @@ export function MilestonesCard({ projectId, milestones }: Props) {
           </ul>
         )}
       </CardContent>
+      <ImportTemplateModal projectId={projectId} open={showImport} onClose={() => setShowImport(false)} />
     </Card>
   )
 }
