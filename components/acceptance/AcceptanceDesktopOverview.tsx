@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CheckCircle2, Circle, Plus, Tablet, FileText, AlertTriangle, Trash2, RotateCcw, ArrowDownToLine } from 'lucide-react'
-import { addPhase, deletePhase, generateRemoteApprovalLink, reopenPhase, initProtocolFromInvoice } from '@/lib/actions/acceptance-protocol.actions'
-import type { AcceptanceProtocol, AcceptancePhase } from '@/lib/db/acceptance-protocol'
+import { addPhase, deletePhase, generateRemoteApprovalLink, reopenPhase, initProtocolFromInvoice, updateItem, recordItemPhoto } from '@/lib/actions/acceptance-protocol.actions'
+import { createClient } from '@/lib/supabase/client'
+import type { AcceptanceProtocol, AcceptancePhase, AcceptanceItem } from '@/lib/db/acceptance-protocol'
 
 interface Props {
   protocol: AcceptanceProtocol
@@ -16,10 +17,173 @@ interface Props {
 
 const PRIORITY_LABEL = { low: 'leicht', medium: 'mittel', critical: 'kritisch' }
 
+function InlineItemEditor({
+  item,
+  projectId,
+  onSaved,
+}: {
+  item: AcceptanceItem
+  projectId: string
+  onSaved: () => void
+}) {
+  const router = useRouter()
+  const [, startTransition] = useTransition()
+  const [status, setStatus] = useState<AcceptanceItem['status']>(item.status)
+  const [priority, setPriority] = useState(item.priority ?? '')
+  const [notes, setNotes] = useState(item.notes ?? '')
+  const [position, setPosition] = useState(item.position ?? '')
+  const [uploading, setUploading] = useState(false)
+  const [localPhotos, setLocalPhotos] = useState<Array<{
+    id: string; signedUrl: string; filename: string; storagePath: string
+  }>>([])
+  const [error, setError] = useState<string | null>(null)
+
+  function handleSave() {
+    startTransition(async () => {
+      const result = await updateItem(item.id, projectId, {
+        status,
+        priority: (status === 'defect' && priority) ? priority as AcceptanceItem['priority'] : null,
+        notes: notes || null,
+        assigneeId: item.assigneeId,
+        buildTeamId: item.buildTeamId,
+        position: position || null,
+      })
+      if (result.error) {
+        setError(typeof result.error === 'string' ? result.error : 'Fehler')
+        return
+      }
+      router.refresh()
+      onSaved()
+    })
+  }
+
+  async function handlePhoto(file: File) {
+    setUploading(true)
+    try {
+      const supabase = createClient()
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const storagePath = `acceptance/${projectId}/${item.id}/${Date.now()}_${safe}`
+      const { error: upErr } = await supabase.storage
+        .from('project-attachments')
+        .upload(storagePath, file, { cacheControl: '3600', upsert: false, contentType: file.type })
+      if (upErr) throw upErr
+      const { data: signedData } = await supabase.storage
+        .from('project-attachments')
+        .createSignedUrl(storagePath, 3600)
+      await recordItemPhoto(item.id, projectId, storagePath, file.name)
+      if (signedData?.signedUrl) {
+        setLocalPhotos(prev => [...prev, {
+          id: `l-${Date.now()}`, storagePath, filename: file.name, signedUrl: signedData.signedUrl
+        }])
+      }
+      router.refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload fehlgeschlagen')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="border-t border-[#036147]/20 pt-3 mt-1 space-y-3">
+      {/* Status buttons */}
+      <div className="flex gap-2">
+        {(['not_checked', 'ok', 'defect'] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => { setStatus(s); if (s !== 'defect') setPriority('') }}
+            className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${
+              status === s
+                ? s === 'ok' ? 'bg-green-500 text-white border-green-500'
+                : s === 'defect' ? 'bg-orange-500 text-white border-orange-500'
+                : 'bg-slate-700 text-white border-slate-700'
+                : 'bg-white text-slate-600 border-slate-200'
+            }`}
+          >
+            {s === 'ok' ? 'OK' : s === 'defect' ? 'Mangel' : 'Offen'}
+          </button>
+        ))}
+      </div>
+
+      {/* Priority (only when defect) */}
+      {status === 'defect' && (
+        <div className="flex gap-2">
+          {(['low', 'medium', 'critical'] as const).map((p) => (
+            <button key={p} onClick={() => setPriority(p)}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                priority === p
+                  ? p === 'critical' ? 'bg-red-500 text-white border-red-500'
+                  : p === 'medium' ? 'bg-orange-400 text-white border-orange-400'
+                  : 'bg-yellow-400 text-slate-900 border-yellow-400'
+                  : 'bg-white text-slate-600 border-slate-200'
+              }`}
+            >
+              {p === 'low' ? 'Leicht' : p === 'medium' ? 'Mittel' : 'Kritisch'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Position */}
+      <input
+        type="text"
+        value={position}
+        onChange={e => setPosition(e.target.value)}
+        placeholder="Anlage / Position (z.B. Netzpfosten Nord)"
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#036147]/40"
+      />
+
+      {/* Notes */}
+      <textarea
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        placeholder="Notiz…"
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs h-16 resize-none focus:outline-none focus:ring-2 focus:ring-[#036147]/40"
+      />
+
+      {/* Photos */}
+      <div className="flex flex-wrap gap-2">
+        {item.photos.map((ph) => (
+          <div key={ph.id} className="w-14 h-14 rounded-lg border border-slate-200 bg-slate-100 flex items-center justify-center overflow-hidden">
+            <span className="text-xs text-slate-400">📷</span>
+          </div>
+        ))}
+        {localPhotos.map((ph) => (
+          <div key={ph.id} className="w-14 h-14 rounded-lg border border-slate-200 overflow-hidden ring-2 ring-blue-300">
+            <img src={ph.signedUrl} alt={ph.filename} className="w-full h-full object-cover" />
+          </div>
+        ))}
+        <label className={`w-14 h-14 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#036147] transition-colors text-xs text-slate-400 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+          📷
+          <span className="text-[0.6rem]">Kamera</span>
+          <input type="file" accept="image/*" capture="environment" className="hidden" disabled={uploading}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handlePhoto(f); e.currentTarget.value = '' }} />
+        </label>
+        <label className={`w-14 h-14 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#036147] transition-colors text-xs text-slate-400 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+          🖼
+          <span className="text-[0.6rem]">Datei</span>
+          <input type="file" accept="image/*" className="hidden" disabled={uploading}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handlePhoto(f); e.currentTarget.value = '' }} />
+        </label>
+      </div>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      <div className="flex gap-2">
+        <Button size="sm" onClick={handleSave} className="bg-[#036147] hover:bg-[#025038] text-white flex-1">
+          Speichern
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onSaved}>Abbrechen</Button>
+      </div>
+    </div>
+  )
+}
+
 function PhaseCard({ phase, projectId, onTabletMode }: { phase: AcceptancePhase; projectId: string; onTabletMode: (phaseId?: string) => void }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [copySuccess, setCopySuccess] = useState(false)
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
 
   const total = phase.items.length
   const ok = phase.items.filter((i) => i.status === 'ok').length
@@ -116,20 +280,38 @@ function PhaseCard({ phase, projectId, onTabletMode }: { phase: AcceptancePhase;
       {phase.items.length > 0 && (
         <ul className="ml-6 space-y-1.5">
           {phase.items.map((item) => (
-            <li key={item.id} className="flex items-center gap-2">
-              {item.status === 'ok'
-                ? <CheckCircle2 className="w-3.5 h-3.5 text-[#036147] flex-shrink-0" />
-                : item.status === 'defect'
-                ? <AlertTriangle className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                : <Circle className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />}
-              <span className={`text-xs ${item.status === 'ok' ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                {item.title}
-              </span>
-              {item.status === 'defect' && item.priority && (
-                <span className="text-xs text-orange-400">({PRIORITY_LABEL[item.priority]})</span>
-              )}
-              {item.photos.length > 0 && (
-                <span className="text-xs text-slate-300">📷{item.photos.length}</span>
+            <li key={item.id}>
+              <div
+                className={`flex items-center gap-2 ${!isComplete ? 'cursor-pointer hover:bg-slate-50 rounded-lg px-1 -mx-1 transition-colors' : ''}`}
+                onClick={() => {
+                  if (isComplete) return
+                  setExpandedItemId(expandedItemId === item.id ? null : item.id)
+                }}
+              >
+                {item.status === 'ok'
+                  ? <CheckCircle2 className="w-3.5 h-3.5 text-[#036147] flex-shrink-0" />
+                  : item.status === 'defect'
+                  ? <AlertTriangle className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                  : <Circle className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />}
+                <span className={`text-xs ${item.status === 'ok' ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                  {item.title}
+                </span>
+                {item.position && (
+                  <span className="text-xs text-slate-400 truncate">{item.position}</span>
+                )}
+                {item.status === 'defect' && item.priority && (
+                  <span className="text-xs text-orange-400">({PRIORITY_LABEL[item.priority]})</span>
+                )}
+                {item.photos.length > 0 && (
+                  <span className="text-xs text-slate-300">📷{item.photos.length}</span>
+                )}
+              </div>
+              {expandedItemId === item.id && (
+                <InlineItemEditor
+                  item={item}
+                  projectId={projectId}
+                  onSaved={() => setExpandedItemId(null)}
+                />
               )}
             </li>
           ))}
