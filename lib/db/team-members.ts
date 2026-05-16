@@ -4,7 +4,7 @@ export async function getTeamMembers() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('team_members')
-    .select('id, firstName, lastName, email, mobile, position, isActive, createdAt')
+    .select('id, firstName, lastName, email, mobile, position, abbreviation, isActive, createdAt')
     .order('lastName', { ascending: true })
   if (error) {
     console.error('[getTeamMembers] error:', error)
@@ -17,7 +17,7 @@ export async function getActiveTeamMemberOptions() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('team_members')
-    .select('id, firstName, lastName, email, mobile, position')
+    .select('id, firstName, lastName, email, mobile, position, abbreviation')
     .eq('isActive', true)
     .order('lastName', { ascending: true })
   if (error) {

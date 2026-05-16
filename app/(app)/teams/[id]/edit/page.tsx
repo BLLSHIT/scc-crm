@@ -82,6 +82,7 @@ export default async function EditTeamMemberPage({
               email: member.email ?? '',
               mobile: member.mobile ?? '',
               position: member.position ?? '',
+              abbreviation: member.abbreviation ?? '',
               isActive: member.isActive ?? true,
             }}
             onSubmit={updateTeamMember.bind(null, id)}

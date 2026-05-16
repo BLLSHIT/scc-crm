@@ -99,6 +99,14 @@ export function TeamMemberForm({ defaultValues, onSubmit, title }: TeamMemberFor
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <Label htmlFor="abbreviation">Kürzel <span className="text-slate-400 font-normal">(max. 2–3 Zeichen, z.B. JH)</span></Label>
+            <Input id="abbreviation" placeholder="JH" maxLength={10} className="w-24 uppercase" {...register('abbreviation')} />
+            {errors.abbreviation && (
+              <p className="text-xs text-red-500">{errors.abbreviation.message}</p>
+            )}
+          </div>
+
           <div className="flex items-center gap-2 pt-2">
             <input
               id="isActive"

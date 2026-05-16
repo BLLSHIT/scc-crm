@@ -17,6 +17,7 @@ function clean(input: TeamMemberInput) {
     email: input.email.trim().toLowerCase(),
     mobile: input.mobile?.trim() || null,
     position: input.position?.trim() || null,
+    abbreviation: input.abbreviation?.trim().toUpperCase() || null,
     isActive: input.isActive,
   }
 }
