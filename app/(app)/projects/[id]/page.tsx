@@ -13,6 +13,7 @@ import { ProjectStatusActions } from '@/components/projects/ProjectStatusActions
 import { MilestonesCard } from '@/components/projects/MilestonesCard'
 import { PunchListCard } from '@/components/projects/PunchListCard'
 import { MaterialChecklistCard } from '@/components/projects/MaterialChecklistCard'
+import { ReclamationCard } from '@/components/projects/ReclamationCard'
 import { ProjectPhotoGallery } from '@/components/projects/ProjectPhotoGallery'
 import { ProjectAttachmentsCard } from '@/components/projects/ProjectAttachmentsCard'
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
@@ -55,6 +56,7 @@ export default async function ProjectDetailPage({
   let protocol: AcceptanceProtocol | null = null
   let tmRes: { data: { id: string; firstName: string; lastName: string }[] | null } = { data: [] }
   let buildTeams: { id: string; name: string }[] = []
+  let reclamations: any[] = []
 
   try {
     const supabase = await createClient()
@@ -102,6 +104,14 @@ export default async function ProjectDetailPage({
       .order('dueDate', { ascending: true, nullsFirst: false })
       .order('createdAt', { ascending: false })
     projectTasks = tasks ?? []
+
+    // Reklamationen für dieses Projekt
+    const reclamationsRes = await supabase
+      .from('project_reclamations')
+      .select('*')
+      .eq('projectId', id)
+      .order('createdAt', { ascending: false })
+    reclamations = reclamationsRes.data ?? []
 
     // Rechnungen zum verknüpften Deal
     if (project.dealId) {
@@ -185,6 +195,8 @@ export default async function ProjectDetailPage({
             <MilestonesCard projectId={id} milestones={project.milestones ?? []} />
 
             <MaterialChecklistCard projectId={id} items={project.materialItems ?? []} />
+
+            <ReclamationCard projectId={id} reclamations={reclamations} />
 
             <PunchListCard projectId={id} items={project.punchItems ?? []} />
 
