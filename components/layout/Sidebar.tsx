@@ -25,6 +25,10 @@ import {
   ChevronRight,
   LogOut,
   Zap,
+  ListChecks,
+  ClipboardList,
+  Boxes,
+  Layers,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getInitials } from '@/lib/utils/format'
@@ -66,7 +70,11 @@ const sections: NavSection[] = [
       { label: 'Branchen',      href: '/industries',   icon: Briefcase },
       { label: 'Lead-Quellen',  href: '/lead-sources', icon: Megaphone },
       { label: 'Textbausteine', href: '/text-modules', icon: AlignLeft },
-      { label: 'Bautrupp',      href: '/build-teams',  icon: HardHat },
+      { label: 'Bautrupp',               href: '/build-teams',                      icon: HardHat },
+      { label: 'Meilenstein-Vorlagen',   href: '/stammdaten/meilenstein-vorlagen',  icon: ListChecks },
+      { label: 'Checklisten-Vorlagen',   href: '/stammdaten/checklisten-vorlagen',  icon: ClipboardList },
+      { label: 'Material-Vorlagen',      href: '/stammdaten/material-vorlagen',     icon: Boxes },
+      { label: 'Vorlagen-Sets',          href: '/stammdaten/vorlagen-sets',         icon: Layers },
     ],
   },
   {
