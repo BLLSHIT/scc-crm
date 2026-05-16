@@ -7,6 +7,7 @@ export interface ProjectFilters {
   status?: ProjectStatus
   teamMemberId?: string
   companyId?: string
+  showCompleted?: boolean
 }
 
 export async function getProjects(filters: ProjectFilters = {}) {
@@ -16,15 +17,17 @@ export async function getProjects(filters: ProjectFilters = {}) {
     .select(
       `id, name, status, startDate, plannedEndDate, actualEndDate, locationCity, buildTeamId, createdAt,
        company:companies(id, name),
-       teamMember:team_members(id, firstName, lastName),
+       teamMember:team_members(id, firstName, lastName, abbreviation),
        buildTeam:build_teams(id, name),
-       deal:deals(id, title, value, currency)`
+       deal:deals(id, title, value, currency),
+       milestones:project_milestones(id, title, dueDate, endDate, type, completedAt, sortOrder)`
     )
     .order('createdAt', { ascending: false })
   if (filters.q) {
     query = query.or(`name.ilike.%${filters.q}%,description.ilike.%${filters.q}%`)
   }
   if (filters.status) query = query.eq('status', filters.status)
+  if (!filters.showCompleted) query = query.neq('status', 'completed')
   if (filters.teamMemberId) query = query.eq('teamMemberId', filters.teamMemberId)
   if (filters.companyId) query = query.eq('companyId', filters.companyId)
   const { data, error } = await query

@@ -7,9 +7,9 @@ import { Header } from '@/components/layout/Header'
 import { SearchBar } from '@/components/layout/SearchBar'
 import { buttonVariants } from '@/components/ui/button'
 import { ProjectKanbanBoard } from '@/components/projects/ProjectKanbanBoard'
-import { CapacityCalendar } from '@/components/projects/CapacityCalendar'
+import { ProjectGanttCalendar } from '@/components/projects/ProjectGanttCalendar'
 import { Plus, LayoutList, Kanban, CalendarDays } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils/format'
+import { formatCurrency } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
 
@@ -18,7 +18,6 @@ const STATUS_FILTERS: { label: string; value?: ProjectStatus }[] = [
   { label: 'Planung', value: 'planning' },
   { label: 'Bestellt', value: 'ordered' },
   { label: 'Installation', value: 'installation' },
-  { label: 'Abgeschlossen', value: 'completed' },
   { label: 'Pausiert', value: 'on_hold' },
   { label: 'Storniert', value: 'cancelled' },
 ]
@@ -41,31 +40,75 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
   cancelled: 'Storniert',
 }
 
-type ViewMode = 'list' | 'board' | 'capacity'
+type ViewMode = 'list' | 'board' | 'kalender'
+
+function initials(tm: { firstName: string; lastName: string; abbreviation?: string | null }) {
+  if (tm.abbreviation) return tm.abbreviation
+  return `${tm.firstName[0] ?? ''}${tm.lastName[0] ?? ''}`.toUpperCase()
+}
+
+function MilestoneTag({ m }: { m: any }) {
+  const isAufbau = m.type === 'aufbau'
+  const isDone = !!m.completedAt
+
+  if (isAufbau) {
+    const start = m.dueDate ? new Date(m.dueDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '?'
+    const end = m.endDate ? new Date(m.endDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '?'
+    return (
+      <span className="inline-flex bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[0.68rem] font-semibold whitespace-nowrap">
+        🔨 Aufbau · {start} – {end}
+      </span>
+    )
+  }
+
+  const date = m.dueDate ? new Date(m.dueDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : ''
+  if (isDone) {
+    return (
+      <span className="inline-flex bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded text-[0.68rem] whitespace-nowrap">
+        ✓ {m.title}{date ? ` · ${date}` : ''}
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[0.68rem] whitespace-nowrap">
+      ⚑ {m.title}{date ? ` · ${date}` : ''}
+    </span>
+  )
+}
 
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: ProjectStatus; view?: string }>
+  searchParams: Promise<{ q?: string; status?: ProjectStatus; view?: string; showCompleted?: string }>
 }) {
   const params = await searchParams
-  const view: ViewMode = params.view === 'board' ? 'board' : params.view === 'capacity' ? 'capacity' : 'list'
+  const view: ViewMode = params.view === 'board' ? 'board' : params.view === 'kalender' ? 'kalender' : 'list'
+  const showCompleted = params.showCompleted === '1'
 
   let profile: Profile | null = null
   let projects: any[] = []
+  let completedCount = 0
+
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError) throw authError
     if (!user) redirect('/login')
-    const profileResult = await supabase
-      .from('profiles').select('*').eq('id', user.id).single()
+    const profileResult = await supabase.from('profiles').select('*').eq('id', user.id).single()
     profile = (profileResult.data as Profile) ?? null
-    // For board/capacity: load all projects (no status filter); for list: apply filter
+
     projects = await getProjects({
       q: params.q,
       status: view === 'list' ? params.status : undefined,
+      showCompleted: view !== 'list' ? true : showCompleted,
     })
+
+    if (view === 'list' && !showCompleted) {
+      const { count } = await supabase
+        .from('projects').select('id', { count: 'exact', head: true })
+        .eq('status', 'completed')
+      completedCount = count ?? 0
+    }
   } catch (err) {
     if (isFrameworkError(err)) throw err
     return <ErrorView where="Projekte laden" err={err} />
@@ -75,6 +118,16 @@ export default async function ProjectsPage({
     const sp = new URLSearchParams()
     if (params.q) sp.set('q', params.q)
     sp.set('view', v)
+    if (showCompleted) sp.set('showCompleted', '1')
+    return `/projects?${sp.toString()}`
+  }
+
+  function toggleCompletedLink() {
+    const sp = new URLSearchParams()
+    if (params.q) sp.set('q', params.q)
+    if (params.status) sp.set('status', params.status)
+    sp.set('view', 'list')
+    if (!showCompleted) sp.set('showCompleted', '1')
     return `/projects?${sp.toString()}`
   }
 
@@ -115,6 +168,22 @@ export default async function ProjectsPage({
             </div>
           )}
 
+          {view === 'list' && (
+            <Link
+              href={toggleCompletedLink()}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border transition-colors ${
+                showCompleted
+                  ? 'bg-slate-900 text-white border-slate-900'
+                  : 'text-slate-500 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <span className={`inline-block w-7 h-4 rounded-full transition-colors relative ${showCompleted ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${showCompleted ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+              </span>
+              Abgeschlossene
+            </Link>
+          )}
+
           <div className="ml-auto flex items-center gap-1">
             <Link href={viewLink('list')} className={`${viewBtnBase} ${view === 'list' ? viewBtnActive : viewBtnInactive}`}>
               <LayoutList className="w-3.5 h-3.5" />Liste
@@ -122,81 +191,104 @@ export default async function ProjectsPage({
             <Link href={viewLink('board')} className={`${viewBtnBase} ${view === 'board' ? viewBtnActive : viewBtnInactive}`}>
               <Kanban className="w-3.5 h-3.5" />Board
             </Link>
-            <Link href={viewLink('capacity')} className={`${viewBtnBase} ${view === 'capacity' ? viewBtnActive : viewBtnInactive}`}>
-              <CalendarDays className="w-3.5 h-3.5" />Auslastung
+            <Link href={viewLink('kalender')} className={`${viewBtnBase} ${view === 'kalender' ? viewBtnActive : viewBtnInactive}`}>
+              <CalendarDays className="w-3.5 h-3.5" />Kalender
             </Link>
           </div>
         </div>
 
+        {/* Hint bar for hidden completed projects */}
+        {view === 'list' && !showCompleted && completedCount > 0 && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
+            <span>{completedCount} abgeschlossene {completedCount === 1 ? 'Projekt' : 'Projekte'} ausgeblendet</span>
+            <Link href={toggleCompletedLink()} className="underline hover:no-underline">Einblenden</Link>
+          </div>
+        )}
+
         {/* ── List View ── */}
         {view === 'list' && (
           <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Projekt</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Kunde</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Ort</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Projektleiter</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Start</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Geplantes Ende</th>
-                  <th className="text-right px-4 py-3 font-medium text-slate-600">Auftragswert</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {projects.length === 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b">
                   <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
-                      Keine Projekte.{' '}
-                      <Link href="/projects/new" className="text-blue-600 hover:underline">
-                        Erstes Projekt anlegen
-                      </Link>
-                    </td>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600 whitespace-nowrap">Projekt</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600 whitespace-nowrap">Kunde</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600 whitespace-nowrap">Status</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600 whitespace-nowrap">Bautrupp</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600 whitespace-nowrap">PL</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600 whitespace-nowrap">Meilensteine</th>
+                    <th className="text-right px-4 py-3 font-medium text-slate-600 whitespace-nowrap">Auftragswert</th>
                   </tr>
-                )}
-                {projects.map((p: any) => (
-                  <tr key={p.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3">
-                      <Link href={`/projects/${p.id}`}
-                        className="font-medium text-slate-900 hover:text-blue-600">
-                        {p.name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{p.company?.name ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_BADGE[p.status as ProjectStatus]}`}>
-                        {STATUS_LABEL[p.status as ProjectStatus]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{p.locationCity ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {p.teamMember ? `${p.teamMember.firstName} ${p.teamMember.lastName}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">{p.startDate ? formatDate(p.startDate) : '—'}</td>
-                    <td className="px-4 py-3 text-slate-500">{p.plannedEndDate ? formatDate(p.plannedEndDate) : '—'}</td>
-                    <td className="px-4 py-3 text-right font-medium">
-                      {p.deal?.value ? formatCurrency(Number(p.deal.value), p.deal.currency ?? 'EUR') : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y">
+                  {projects.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                        Keine Projekte.{' '}
+                        <Link href="/projects/new" className="text-blue-600 hover:underline">
+                          Erstes Projekt anlegen
+                        </Link>
+                      </td>
+                    </tr>
+                  )}
+                  {projects.map((p: any) => {
+                    const tm = p.teamMember
+                    const milestones = (p.milestones ?? []).slice().sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+                    const isCompleted = p.status === 'completed'
+                    return (
+                      <tr key={p.id} className={`hover:bg-slate-50 ${isCompleted ? 'opacity-50' : ''}`}>
+                        <td className="px-4 py-3">
+                          <Link href={`/projects/${p.id}`} className="font-medium text-slate-900 hover:text-blue-600">
+                            {p.name}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{p.company?.name ?? '—'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_BADGE[p.status as ProjectStatus]}`}>
+                            {STATUS_LABEL[p.status as ProjectStatus]}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{p.buildTeam?.name ?? '—'}</td>
+                        <td className="px-4 py-3">
+                          {tm ? (
+                            <span
+                              title={`${tm.firstName} ${tm.lastName}`}
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#036147] text-white text-[0.68rem] font-bold"
+                            >
+                              {initials(tm)}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-1">
+                            {milestones.map((m: any) => (
+                              <MilestoneTag key={m.id} m={m} />
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium">
+                          {p.deal?.value ? formatCurrency(Number(p.deal.value), p.deal.currency ?? 'EUR') : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {/* ── Board View ── */}
-        {view === 'board' && (
-          <ProjectKanbanBoard initialProjects={projects} />
-        )}
+        {view === 'board' && <ProjectKanbanBoard initialProjects={projects} />}
 
-        {/* ── Capacity View ── */}
-        {view === 'capacity' && (
+        {/* ── Kalender View ── */}
+        {view === 'kalender' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">
-              Aktive Projekte nach Bauteam · aktuelle 5 Monate · Stornierte Projekte ausgeblendet
+              Projekte nach Startdatum · aktuelle 6 Monate · abgeschlossene ausgeblendet
             </p>
-            <CapacityCalendar projects={projects} />
+            <ProjectGanttCalendar projects={projects} />
           </div>
         )}
       </main>
