@@ -84,10 +84,10 @@ export function AcceptancePhasesTabs({ protocol, projectId, teamMembers, buildTe
   return (
     <div className="flex flex-col h-screen bg-slate-100" style={{ touchAction: 'pan-y' }}>
       {/* Top bar */}
-      <div className="bg-blue-900 text-white px-4 pt-3 pb-0 flex-shrink-0">
+      <div className="bg-[#036147] text-white px-4 pt-3 pb-0 flex-shrink-0">
         <div className="flex items-center justify-between mb-2">
           <h1 className="font-bold text-base truncate">{activePhase?.name ?? 'Protokoll'}</h1>
-          <span className="text-xs text-blue-300 ml-2">{activePhase ? `${activePhase.items.filter(i => i.status !== 'not_checked').length}/${activePhase.items.length}` : ''}</span>
+          <span className="text-xs text-emerald-200 ml-2">{activePhase ? `${activePhase.items.filter(i => i.status !== 'not_checked').length}/${activePhase.items.length}` : ''}</span>
         </div>
         {/* Phase tabs */}
         <div className="flex gap-1 overflow-x-auto pb-0 scrollbar-none -mx-1 px-1">
@@ -100,10 +100,10 @@ export function AcceptancePhasesTabs({ protocol, projectId, teamMembers, buildTe
                 onClick={() => !locked && setActivePhaseId(phase.id)}
                 disabled={locked}
                 className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-t-lg transition-colors whitespace-nowrap flex items-center gap-1 ${
-                  active   ? 'bg-white text-blue-900'
-                  : locked ? 'text-blue-800 cursor-not-allowed opacity-50'
-                  : phase.completedAt ? 'text-blue-300 hover:text-white'
-                  : 'text-blue-300 hover:text-white'
+                  active   ? 'bg-white text-[#036147]'
+                  : locked ? 'text-emerald-900 cursor-not-allowed opacity-50'
+                  : phase.completedAt ? 'text-emerald-200 hover:text-white'
+                  : 'text-emerald-200 hover:text-white'
                 }`}
               >
                 {phase.completedAt ? <CheckCircle2 className="w-3 h-3" /> : locked ? <Lock className="w-3 h-3" /> : null}
@@ -113,7 +113,7 @@ export function AcceptancePhasesTabs({ protocol, projectId, teamMembers, buildTe
           })}
           <button
             onClick={() => setShowAddPhase(true)}
-            className="flex-shrink-0 px-2 py-2 text-xs text-blue-400 hover:text-white"
+            className="flex-shrink-0 px-2 py-2 text-xs text-emerald-300 hover:text-white"
           >
             +
           </button>
@@ -160,7 +160,7 @@ export function AcceptancePhasesTabs({ protocol, projectId, teamMembers, buildTe
               />
               <button
                 onClick={handleAddItem}
-                className="bg-blue-600 text-white px-4 rounded-lg text-sm font-medium"
+                className="bg-[#036147] text-white px-4 rounded-lg text-sm font-medium"
               >
                 OK
               </button>
@@ -175,13 +175,13 @@ export function AcceptancePhasesTabs({ protocol, projectId, teamMembers, buildTe
             <div className="flex gap-2">
               <button
                 onClick={() => setShowAddItem(true)}
-                className="flex-1 py-3 rounded-xl border-2 border-dashed border-slate-300 text-sm text-slate-500 font-medium flex items-center justify-center gap-2 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                className="flex-1 py-3 rounded-xl border-2 border-dashed border-slate-300 text-sm text-slate-500 font-medium flex items-center justify-center gap-2 hover:border-emerald-400 hover:text-emerald-600 transition-colors"
               >
                 <Plus className="w-4 h-4" /> Punkt hinzufügen
               </button>
               <button
                 onClick={() => setShowSignature(true)}
-                className="flex-1 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold flex items-center justify-center gap-2"
+                className="flex-1 py-3 rounded-xl bg-white text-[#036147] border border-[#036147] text-sm font-semibold flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4" /> Phase abschliessen
               </button>
@@ -201,7 +201,7 @@ export function AcceptancePhasesTabs({ protocol, projectId, teamMembers, buildTe
             className="text-sm"
             onKeyDown={(e) => e.key === 'Enter' && handleAddPhase()}
           />
-          <button onClick={handleAddPhase} className="bg-blue-600 text-white px-4 rounded-lg text-sm font-medium">OK</button>
+          <button onClick={handleAddPhase} className="bg-[#036147] text-white px-4 rounded-lg text-sm font-medium">OK</button>
           <button onClick={() => setShowAddPhase(false)} className="px-3 text-slate-500 text-sm">✕</button>
         </div>
       )}
