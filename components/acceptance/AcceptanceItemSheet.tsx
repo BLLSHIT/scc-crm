@@ -29,6 +29,12 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
   const [buildTeamId, setBuildTeamId] = useState(item.buildTeamId ?? '')
   const [uploading, setUploading] = useState(false)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
+  const [localPhotos, setLocalPhotos] = useState<Array<{
+    id: string
+    storagePath: string
+    filename: string
+    signedUrl: string
+  }>>([])
   const [error, setError] = useState<string | null>(null)
 
   // Load signed URLs for existing photos
@@ -89,6 +95,19 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
 
       const result = await recordItemPhoto(item.id, projectId, storagePath, file.name)
       if (result.error) throw new Error(result.error)
+
+      const { data: signedData } = await supabase.storage
+        .from('project-attachments')
+        .createSignedUrl(storagePath, 3600)
+
+      if (signedData?.signedUrl) {
+        setLocalPhotos(prev => [...prev, {
+          id: `local-${Date.now()}`,
+          storagePath,
+          filename: file.name,
+          signedUrl: signedData.signedUrl,
+        }])
+      }
       router.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload fehlgeschlagen')
@@ -223,6 +242,12 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
                 >
                   <XCircle className="w-4 h-4 text-white" />
                 </button>
+              </div>
+            ))}
+
+            {localPhotos.map((photo) => (
+              <div key={photo.id} className="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200 ring-2 ring-blue-300">
+                <img src={photo.signedUrl} alt={photo.filename} className="w-full h-full object-cover" />
               </div>
             ))}
 
