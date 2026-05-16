@@ -277,3 +277,86 @@ export async function submitRemoteApproval(
   if (error) return { error: error.message }
   return {}
 }
+
+export async function initProtocolFromInvoice(
+  protocolId: string,
+  projectId: string
+): Promise<ActionResult & { created?: number }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Nicht autorisiert.' }
+
+  // Block if protocol already has phases
+  const { data: existingPhases } = await supabase
+    .from('acceptance_phases')
+    .select('id')
+    .eq('protocolId', protocolId)
+    .limit(1)
+  if (existingPhases && existingPhases.length > 0) {
+    return { error: 'Protokoll hat bereits Phasen. Bitte zuerst alle Phasen löschen.' }
+  }
+
+  // Get project's dealId
+  const { data: project } = await supabase
+    .from('projects')
+    .select('dealId')
+    .eq('id', projectId)
+    .single()
+  if (!project?.dealId) return { error: 'Kein Deal mit diesem Projekt verknüpft.' }
+
+  // Get most recent invoice for this deal
+  const { data: invoices } = await supabase
+    .from('invoices')
+    .select('id')
+    .eq('dealId', project.dealId)
+    .order('createdAt', { ascending: false })
+    .limit(1)
+  if (!invoices || invoices.length === 0) return { error: 'Keine Rechnung für diesen Deal gefunden.' }
+
+  const invoiceId = (invoices[0] as any).id
+
+  // Get product-type line items from invoice
+  const { data: lineItems } = await supabase
+    .from('invoice_line_items')
+    .select('id, name, itemType, sortOrder')
+    .eq('invoiceId', invoiceId)
+    .eq('itemType', 'product')
+    .order('sortOrder', { ascending: true })
+
+  if (!lineItems || lineItems.length === 0) {
+    return { error: 'Keine Produkt-Positionen in der Rechnung gefunden.' }
+  }
+
+  const STANDARD_ITEMS = ['Turf', 'Netz / Netzpfosten', 'Scheiben / Silikon', 'Licht', 'Sonstige Mängel']
+
+  let created = 0
+  for (let phaseIdx = 0; phaseIdx < lineItems.length; phaseIdx++) {
+    const lineItem = lineItems[phaseIdx] as any
+    const phaseId = randomUUID()
+
+    const { error: phaseErr } = await supabase.from('acceptance_phases').insert({
+      id: phaseId,
+      protocolId,
+      name: lineItem.name,
+      sortOrder: phaseIdx,
+      updatedAt: new Date().toISOString(),
+    })
+    if (phaseErr) return { error: phaseErr.message }
+
+    for (let itemIdx = 0; itemIdx < STANDARD_ITEMS.length; itemIdx++) {
+      const { error: itemErr } = await supabase.from('acceptance_items').insert({
+        id: randomUUID(),
+        phaseId,
+        title: STANDARD_ITEMS[itemIdx],
+        status: 'not_checked',
+        sortOrder: itemIdx,
+        updatedAt: new Date().toISOString(),
+      })
+      if (itemErr) return { error: itemErr.message }
+    }
+    created++
+  }
+
+  revalidate(projectId)
+  return { created }
+}
