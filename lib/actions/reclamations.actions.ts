@@ -45,6 +45,7 @@ export async function updateReclamationStatus(
       updatedAt: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('projectId', projectId)
   if (error) return { error: error.message }
   revalidatePath(`/projects/${projectId}`)
   return {}
@@ -55,7 +56,7 @@ export async function deleteReclamation(id: string, projectId: string): Promise<
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Nicht autorisiert.' }
 
-  const { error } = await supabase.from('project_reclamations').delete().eq('id', id)
+  const { error } = await supabase.from('project_reclamations').delete().eq('id', id).eq('projectId', projectId)
   if (error) return { error: error.message }
   revalidatePath(`/projects/${projectId}`)
   return {}
