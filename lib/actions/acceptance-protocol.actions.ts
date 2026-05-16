@@ -286,6 +286,15 @@ export async function initProtocolFromInvoice(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Nicht autorisiert.' }
 
+  // Validate protocolId belongs to projectId
+  const { data: protocolCheck } = await supabase
+    .from('acceptance_protocols')
+    .select('id')
+    .eq('id', protocolId)
+    .eq('projectId', projectId)
+    .maybeSingle()
+  if (!protocolCheck) return { error: 'Protokoll nicht gefunden.' }
+
   // Block if protocol already has phases
   const { data: existingPhases } = await supabase
     .from('acceptance_phases')
@@ -313,7 +322,7 @@ export async function initProtocolFromInvoice(
     .limit(1)
   if (!invoices || invoices.length === 0) return { error: 'Keine Rechnung für diesen Deal gefunden.' }
 
-  const invoiceId = (invoices[0] as any).id
+  const invoiceId = invoices[0].id
 
   // Get product-type line items from invoice
   const { data: lineItems } = await supabase
@@ -329,9 +338,10 @@ export async function initProtocolFromInvoice(
 
   const STANDARD_ITEMS = ['Turf', 'Netz / Netzpfosten', 'Scheiben / Silikon', 'Licht', 'Sonstige Mängel']
 
+  const createdPhaseIds: string[] = []
   let created = 0
   for (let phaseIdx = 0; phaseIdx < lineItems.length; phaseIdx++) {
-    const lineItem = lineItems[phaseIdx] as any
+    const lineItem = lineItems[phaseIdx] as { id: string; name: string; itemType: string; sortOrder: number }
     const phaseId = randomUUID()
 
     const { error: phaseErr } = await supabase.from('acceptance_phases').insert({
@@ -341,18 +351,28 @@ export async function initProtocolFromInvoice(
       sortOrder: phaseIdx,
       updatedAt: new Date().toISOString(),
     })
-    if (phaseErr) return { error: phaseErr.message }
+    if (phaseErr) {
+      // Clean up any phases already inserted
+      if (createdPhaseIds.length > 0) {
+        await supabase.from('acceptance_phases').delete().in('id', createdPhaseIds)
+      }
+      return { error: phaseErr.message }
+    }
+    createdPhaseIds.push(phaseId)
 
-    for (let itemIdx = 0; itemIdx < STANDARD_ITEMS.length; itemIdx++) {
-      const { error: itemErr } = await supabase.from('acceptance_items').insert({
-        id: randomUUID(),
-        phaseId,
-        title: STANDARD_ITEMS[itemIdx],
-        status: 'not_checked',
-        sortOrder: itemIdx,
-        updatedAt: new Date().toISOString(),
-      })
-      if (itemErr) return { error: itemErr.message }
+    const itemInserts = STANDARD_ITEMS.map((title, itemIdx) => ({
+      id: randomUUID(),
+      phaseId,
+      title,
+      status: 'not_checked' as const,
+      sortOrder: itemIdx,
+      updatedAt: new Date().toISOString(),
+    }))
+    const { error: itemErr } = await supabase.from('acceptance_items').insert(itemInserts)
+    if (itemErr) {
+      // Clean up all phases (cascade will delete items for completed phases)
+      await supabase.from('acceptance_phases').delete().in('id', createdPhaseIds)
+      return { error: itemErr.message }
     }
     created++
   }
