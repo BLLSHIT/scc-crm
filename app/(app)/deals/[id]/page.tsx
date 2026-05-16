@@ -349,14 +349,29 @@ export default async function DealDetailPage({
                 {(() => {
                   const accepted = dealQuotes.find((q) => q.status === 'accepted')
                   if (!accepted) return null
+                  const totalGross = Number(accepted.totalGross ?? 0)
+                  let totalEk = 0
+                  for (const li of ((accepted.quote_line_items as any[]) ?? [])) {
+                    totalEk += Number(li.product?.purchasePriceNet ?? 0) * Number(li.quantity ?? 1)
+                  }
+                  const marginEuro = totalGross > 0 ? Math.round(totalGross - totalEk) : null
+                  const marginPct = totalGross > 0 ? Math.round(((totalGross - totalEk) / totalGross) * 100) : null
                   return (
                     <div className="mt-3 pt-3 border-t border-slate-100 space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-slate-500">Auftragswert (akzept. Angebot)</span>
                         <span className="font-semibold text-emerald-700">
-                          {formatCurrency(Number(accepted.totalGross ?? 0), 'EUR')}
+                          {formatCurrency(totalGross, 'EUR')}
                         </span>
                       </div>
+                      {marginPct != null && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-500">Marge</span>
+                          <span className={`font-medium ${marginPct >= 30 ? 'text-emerald-600' : marginPct >= 10 ? 'text-amber-600' : 'text-red-600'}`}>
+                            {marginPct}% / {formatCurrency(marginEuro!, 'EUR')}
+                          </span>
+                        </div>
+                      )}
                       {deal.value != null && (
                         <div className="flex items-center justify-between text-xs text-slate-400">
                           <span>Dealwert</span>

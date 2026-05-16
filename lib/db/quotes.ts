@@ -39,7 +39,7 @@ export async function getQuotesByDealId(dealId: string) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('quotes')
-    .select('id, quoteNumber, title, status, totalGross, validUntil, createdAt')
+    .select('id, quoteNumber, title, status, totalGross, validUntil, createdAt, quote_line_items(quantity, product:products(purchasePriceNet))')
     .eq('dealId', dealId)
     .order('createdAt', { ascending: false })
   if (error) {

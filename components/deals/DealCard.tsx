@@ -27,9 +27,12 @@ export interface DealCardData {
   locationCity?: string | null
   quotesCount?: number
   acceptedQuoteTotal?: number | null
+  latestQuoteTotal?: number | null
+  latestQuoteStatus?: string | null
   attachmentsCount?: number
   openTasksCount?: number
   marginPercent?: number | null
+  marginEuro?: number | null
   stageId: string
 }
 
@@ -44,8 +47,16 @@ export function DealCard({ deal, isOverlay = false }: DealCardProps) {
 
   const style = { transform: CSS.Transform.toString(transform), transition }
 
-  // Wenn ein akzeptiertes Angebot da ist → das ist der echte Verkaufspreis
-  const displayValue = deal.acceptedQuoteTotal != null ? deal.acceptedQuoteTotal : Number(deal.value)
+  const displayValue =
+    deal.acceptedQuoteTotal != null ? deal.acceptedQuoteTotal :
+    deal.latestQuoteTotal != null ? deal.latestQuoteTotal :
+    Number(deal.value)
+
+  const quoteHint =
+    deal.acceptedQuoteTotal != null ? 'aus akzept. Angebot' :
+    deal.latestQuoteTotal != null
+      ? (deal.latestQuoteStatus === 'sent' ? 'aus Angebot (Gesendet)' : 'aus Angebot (Entwurf)')
+      : null
 
   return (
     <div
@@ -76,12 +87,13 @@ export function DealCard({ deal, isOverlay = false }: DealCardProps) {
               deal.marginPercent >= 10 ? 'text-amber-600' : 'text-red-600'
             }`}>
               Marge {deal.marginPercent.toFixed(0)}%
+              {deal.marginEuro != null && ` / ${formatCurrency(deal.marginEuro, deal.currency)}`}
             </span>
           )}
         </div>
 
-        {deal.acceptedQuoteTotal != null && (
-          <p className="text-[10px] text-slate-400 italic -mt-1">aus akzept. Angebot</p>
+        {quoteHint && (
+          <p className="text-[10px] text-slate-400 italic -mt-1">{quoteHint}</p>
         )}
 
         {deal.company && (

@@ -46,7 +46,7 @@ export async function getDealsForPipeline(pipelineId: string) {
   const [quotesRes, attachRes, tasksRes, contactsRes] = await Promise.all([
     supabase
       .from('quotes')
-      .select('dealId, status, totalGross, quote_line_items(quantity, product:products(purchasePriceNet))')
+      .select('dealId, status, totalGross, createdAt, quote_line_items(quantity, product:products(purchasePriceNet))')
       .in('dealId', dealIds),
     supabase
       .from('deal_attachments')
@@ -94,19 +94,24 @@ export async function getDealsForPipeline(pipelineId: string) {
     const quotes = quotesByDeal.get(deal.id) ?? []
     const acceptedQuote = quotes.find((q) => q.status === 'accepted') ?? null
 
+    // Latest non-accepted quote with a price (for Entwurf/Gesendet display)
+    const latestOtherQuote = !acceptedQuote
+      ? [...quotes.filter(q => q.status !== 'accepted' && Number(q.totalGross) > 0)]
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .sort((a, b) => new Date((b as any).createdAt ?? 0).getTime() - new Date((a as any).createdAt ?? 0).getTime())[0] ?? null
+      : null
+
     let marginPercent: number | null = null
+    let marginEuro: number | null = null
     if (acceptedQuote && Number(acceptedQuote.totalGross) > 0) {
       const totalGross = Number(acceptedQuote.totalGross)
       let totalEk = 0
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       for (const li of ((acceptedQuote.quote_line_items as any[]) ?? [])) {
-        const ek = Number(li.product?.purchasePriceNet ?? 0)
-        const qty = Number(li.quantity ?? 1)
-        totalEk += ek * qty
+        totalEk += Number(li.product?.purchasePriceNet ?? 0) * Number(li.quantity ?? 1)
       }
-      if (totalGross > 0) {
-        marginPercent = Math.round(((totalGross - totalEk) / totalGross) * 100)
-      }
+      marginEuro = Math.round(totalGross - totalEk)
+      marginPercent = Math.round(((totalGross - totalEk) / totalGross) * 100)
     }
 
     return {
@@ -115,9 +120,13 @@ export async function getDealsForPipeline(pipelineId: string) {
       primaryContactName: primaryContactByDeal.get(deal.id) ?? null,
       quotesCount: quotes.length,
       acceptedQuoteTotal: acceptedQuote ? Number(acceptedQuote.totalGross) : null,
+      latestQuoteTotal: latestOtherQuote ? Number(latestOtherQuote.totalGross) : null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      latestQuoteStatus: (latestOtherQuote as any)?.status ?? null,
       attachmentsCount: attachCountByDeal.get(deal.id) ?? 0,
       openTasksCount: openTaskCountByDeal.get(deal.id) ?? 0,
       marginPercent,
+      marginEuro,
     }
   })
 
