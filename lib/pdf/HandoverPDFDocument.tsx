@@ -113,7 +113,7 @@ export function HandoverPDFDocument({ project, generatedAt }: Props) {
             <Text style={styles.infoValue}>{formatDate(project.startDate)}</Text>
           </View>
           <View style={styles.infoBox}>
-            <Text style={styles.infoLabel}>Geplantes Ende</Text>
+            <Text style={styles.infoLabel}>Datum Übergabe</Text>
             <Text style={styles.infoValue}>{formatDate(project.plannedEndDate)}</Text>
           </View>
         </View>

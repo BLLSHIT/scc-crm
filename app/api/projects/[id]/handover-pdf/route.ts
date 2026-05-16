@@ -52,13 +52,16 @@ export async function GET(
       createElement(HandoverPDFDocument, { project: fullProject, generatedAt }) as any
     )
 
+    const url = new URL(_request.url)
+    const inline = url.searchParams.get('inline') === '1'
     const filename = `uebergabe_${(project.name ?? 'projekt').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().slice(0, 10)}.pdf`
-
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': inline
+          ? `inline; filename="${filename}"`
+          : `attachment; filename="${filename}"`,
         'Cache-Control': 'no-store',
       },
     })

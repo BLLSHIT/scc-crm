@@ -109,7 +109,7 @@ export default async function ShareProjectPage({
             {project.plannedEndDate && (
               <div className="flex items-center gap-2 text-slate-600">
                 <CalendarClock className="w-4 h-4 text-slate-400" />
-                Geplantes Ende: {formatDate(project.plannedEndDate)}
+                Datum Übergabe: {formatDate(project.plannedEndDate)}
               </div>
             )}
           </div>
