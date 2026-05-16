@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getProjectById, getProjectAttachments, type ProjectStatus } from '@/lib/db/projects'
 import { getActivityLogs } from '@/lib/db/activity-logs'
+import { getOrCreateProtocol } from '@/lib/db/acceptance-protocol'
+import { getActiveBuildTeamOptions } from '@/lib/db/build-teams'
 import { Header } from '@/components/layout/Header'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,7 +18,9 @@ import { ProjectAttachmentsCard } from '@/components/projects/ProjectAttachments
 import { ActivityTimeline } from '@/components/activity/ActivityTimeline'
 import { NoteComposer } from '@/components/activity/NoteComposer'
 import { ShareLinkPanel } from '@/components/projects/ShareLinkPanel'
-import { Pencil, Building2, User, UserCheck, Mail, Phone, FileText, MapPin, Receipt, HardHat, Download, Send, ClipboardCheck } from 'lucide-react'
+import { HandoverProtocolTrigger } from '@/components/projects/HandoverProtocolTrigger'
+import { AcceptanceProtocolTrigger } from '@/components/acceptance/AcceptanceProtocolTrigger'
+import { Pencil, Building2, User, UserCheck, Mail, Phone, FileText, MapPin, Receipt, HardHat, Send } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { isFrameworkError, ErrorView } from '@/lib/utils/page-error'
 import type { Profile } from '@/types/app.types'
@@ -48,6 +52,9 @@ export default async function ProjectDetailPage({
   let activities: any[] = []
   let projectTasks: any[] = []
   let projectInvoices: any[] = []
+  let protocol: import('@/lib/db/acceptance-protocol').AcceptanceProtocol | null = null
+  let tmRes: { data: { id: string; firstName: string; lastName: string }[] | null } = { data: [] }
+  let buildTeams: { id: string; name: string }[] = []
 
   try {
     const supabase = await createClient()
@@ -66,6 +73,14 @@ export default async function ProjectDetailPage({
         </div>
       )
     }
+    const [protocolData, teamMembersRes, buildTeamsData] = await Promise.all([
+      getOrCreateProtocol(id),
+      supabase.from('team_members').select('id, firstName, lastName').eq('isActive', true).order('lastName'),
+      getActiveBuildTeamOptions(),
+    ])
+    protocol = protocolData
+    tmRes = teamMembersRes
+    buildTeams = buildTeamsData
     attachments = await getProjectAttachments(id)
     // Deal-Dateien für gemeinsamen Datei-Pool
     if (project.dealId) {
@@ -112,19 +127,17 @@ export default async function ProjectDetailPage({
           profile={profile}
           actions={
             <div className="flex items-center gap-2">
-              <a
-                href={`/api/projects/${id}/handover-pdf`}
-                download
-                className={buttonVariants({ size: 'sm', variant: 'outline' })}
-              >
-                <Download className="w-4 h-4 mr-2" />Übergabe-PDF
-              </a>
-              <Link
-                href={`/projects/${id}/protocol`}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-              >
-                <ClipboardCheck className="w-4 h-4" />Abnahmeprotokoll
-              </Link>
+              <HandoverProtocolTrigger projectId={id} projectName={project.name} />
+              {protocol && (
+                <AcceptanceProtocolTrigger
+                  protocol={protocol}
+                  projectId={id}
+                  projectName={project.name}
+                  teamMembers={tmRes.data ?? []}
+                  buildTeams={buildTeams}
+                  currentUserId={currentUserId ?? undefined}
+                />
+              )}
               <Link href={`/projects/${id}/edit`}
                 className={buttonVariants({ size: 'sm', variant: 'outline' })}>
                 <Pencil className="w-4 h-4 mr-2" />Bearbeiten
@@ -147,7 +160,7 @@ export default async function ProjectDetailPage({
                   )}
                   {project.plannedEndDate && (
                     <div className="text-xs text-slate-500">
-                      Geplantes Ende: <span className="font-medium text-slate-700">{formatDate(project.plannedEndDate)}</span>
+                      Datum Übergabe: <span className="font-medium text-slate-700">{formatDate(project.plannedEndDate)}</span>
                     </div>
                   )}
                   {project.actualEndDate && (
