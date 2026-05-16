@@ -104,9 +104,13 @@ export default async function ProjectsPage({
     })
 
     if (view === 'list' && !showCompleted) {
-      const { count } = await supabase
+      let countQuery = supabase
         .from('projects').select('id', { count: 'exact', head: true })
         .eq('status', 'completed')
+      if (params.q) {
+        countQuery = countQuery.or(`name.ilike.%${params.q}%,description.ilike.%${params.q}%`)
+      }
+      const { count } = await countQuery
       completedCount = count ?? 0
     }
   } catch (err) {
@@ -129,6 +133,15 @@ export default async function ProjectsPage({
     sp.set('view', 'list')
     if (!showCompleted) sp.set('showCompleted', '1')
     return `/projects?${sp.toString()}`
+  }
+
+  function statusLink(value?: ProjectStatus) {
+    const sp = new URLSearchParams()
+    if (params.q) sp.set('q', params.q)
+    if (value) sp.set('status', value)
+    if (showCompleted) sp.set('showCompleted', '1')
+    const qs = sp.toString()
+    return qs ? `/projects?${qs}` : '/projects'
   }
 
   const viewBtnBase = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors'
@@ -155,7 +168,7 @@ export default async function ProjectsPage({
             <div className="flex gap-1 flex-wrap">
               {STATUS_FILTERS.map((f) => {
                 const active = (params.status ?? undefined) === f.value
-                const href = f.value ? `/projects?status=${f.value}` : '/projects'
+                const href = statusLink(f.value)
                 return (
                   <Link key={f.label} href={href}
                     className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
