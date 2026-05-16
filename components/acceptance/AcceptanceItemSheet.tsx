@@ -225,9 +225,11 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
                 </button>
               </div>
             ))}
-            <label className={`w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 transition-colors ${uploading ? 'opacity-50' : ''}`}>
+
+            {/* Kamera-Button */}
+            <label className={`w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
               <Camera className="w-5 h-5 text-slate-400" />
-              <span className="text-xs text-slate-400 mt-1">{uploading ? '...' : 'Foto'}</span>
+              <span className="text-xs text-slate-400 mt-1">Kamera</span>
               <input
                 type="file"
                 accept="image/*"
@@ -241,6 +243,31 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
                 }}
               />
             </label>
+
+            {/* Datei-Bibliothek-Button */}
+            <label className={`w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+              <span className="text-xs text-slate-400 mt-1">Bibliothek</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploading}
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) handlePhotoUpload(f)
+                  e.currentTarget.value = ''
+                }}
+              />
+            </label>
+
+            {uploading && (
+              <div className="w-20 h-20 rounded-lg border border-slate-200 flex items-center justify-center bg-slate-50">
+                <span className="text-xs text-slate-400">...</span>
+              </div>
+            )}
           </div>
         </div>
 
