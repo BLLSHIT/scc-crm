@@ -354,8 +354,8 @@ export default async function DealDetailPage({
                   for (const li of ((accepted.quote_line_items as any[]) ?? [])) {
                     totalEk += Number(li.product?.purchasePriceNet ?? 0) * Number(li.quantity ?? 1)
                   }
-                  const marginEuro = totalGross > 0 ? Math.round(totalGross - totalEk) : null
-                  const marginPct = totalGross > 0 ? Math.round(((totalGross - totalEk) / totalGross) * 100) : null
+                  const marginEuro = totalGross > 0 ? (totalEk > 0 ? Math.round(totalGross - totalEk) : 0) : null
+                  const marginPct = totalGross > 0 ? (totalEk > 0 ? Math.round(((totalGross - totalEk) / totalGross) * 100) : 0) : null
                   return (
                     <div className="mt-3 pt-3 border-t border-slate-100 space-y-1">
                       <div className="flex items-center justify-between text-sm">

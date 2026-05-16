@@ -94,9 +94,9 @@ export async function getDealsForPipeline(pipelineId: string) {
     const quotes = quotesByDeal.get(deal.id) ?? []
     const acceptedQuote = quotes.find((q) => q.status === 'accepted') ?? null
 
-    // Latest non-accepted quote with a price (for Entwurf/Gesendet display)
+    // Latest non-accepted quote (totalGross may be null if not yet calculated)
     const latestOtherQuote = !acceptedQuote
-      ? [...quotes.filter(q => q.status !== 'accepted' && Number(q.totalGross) > 0)]
+      ? [...quotes.filter(q => q.status !== 'accepted' && q.totalGross != null)]
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .sort((a, b) => new Date((b as any).createdAt ?? 0).getTime() - new Date((a as any).createdAt ?? 0).getTime())[0] ?? null
       : null
@@ -110,8 +110,9 @@ export async function getDealsForPipeline(pipelineId: string) {
       for (const li of ((acceptedQuote.quote_line_items as any[]) ?? [])) {
         totalEk += Number(li.product?.purchasePriceNet ?? 0) * Number(li.quantity ?? 1)
       }
-      marginEuro = Math.round(totalGross - totalEk)
-      marginPercent = Math.round(((totalGross - totalEk) / totalGross) * 100)
+      // Kein EK eingetragen → Marge = 0
+      marginEuro = totalEk > 0 ? Math.round(totalGross - totalEk) : 0
+      marginPercent = totalEk > 0 ? Math.round(((totalGross - totalEk) / totalGross) * 100) : 0
     }
 
     return {
