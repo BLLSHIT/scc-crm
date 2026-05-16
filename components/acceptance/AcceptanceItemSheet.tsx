@@ -27,6 +27,7 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
   const [notes, setNotes] = useState(item.notes ?? '')
   const [assigneeId, setAssigneeId] = useState(item.assigneeId ?? '')
   const [buildTeamId, setBuildTeamId] = useState(item.buildTeamId ?? '')
+  const [position, setPosition] = useState(item.position ?? '')
   const [uploading, setUploading] = useState(false)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [localPhotos, setLocalPhotos] = useState<Array<{
@@ -61,6 +62,7 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
         status: status as AcceptanceItem['status'],
         priority: (status === 'defect' && priority) ? priority as AcceptanceItem['priority'] : null,
         notes: notes || null,
+        position: position || null,
         assigneeId: assigneeId || null,
         buildTeamId: buildTeamId || null,
       })
@@ -181,6 +183,18 @@ export function AcceptanceItemSheet({ item, projectId, teamMembers, buildTeams, 
             </div>
           </div>
         )}
+
+        {/* Anlage / Position */}
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Anlage / Position</p>
+          <input
+            type="text"
+            value={position}
+            onChange={(e) => setPosition(e.target.value)}
+            placeholder="z.B. Netzpfosten Nord, Ecke links, Feld 3…"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
         {/* Notes */}
         <div>

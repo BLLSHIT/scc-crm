@@ -26,7 +26,12 @@ export function AcceptanceItemCard({ item, onEdit }: Props) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm text-slate-900 truncate">{item.title}</p>
+          <p className="font-semibold text-sm text-slate-900 truncate">
+            {item.title}
+            {item.position && (
+              <span className="text-xs text-slate-400 truncate ml-1">· {item.position}</span>
+            )}
+          </p>
           {item.notes && (
             <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{item.notes}</p>
           )}

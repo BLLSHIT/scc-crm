@@ -19,6 +19,7 @@ export interface AcceptanceItem {
   status: 'not_checked' | 'ok' | 'defect'
   priority: 'low' | 'medium' | 'critical' | null
   notes: string | null
+  position: string | null
   assigneeId: string | null
   buildTeamId: string | null
   sortOrder: number
