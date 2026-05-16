@@ -285,13 +285,30 @@ export async function fetchTemplateOptions() {
 
 // ─── Import ───────────────────────────────────────────────────────────────────
 
-export async function importTemplate(projectId: string, input: ImportTemplateInput): Promise<ActionResult> {
-  const parsed = importTemplateSchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
+export async function importTemplate(
+  projectId: string,
+  input: ImportTemplateInput & { setId?: string }
+): Promise<ActionResult> {
   const { supabase, user } = await getUser()
   if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
 
-  const { milestoneTemplateId, punchlistTemplateId, materialTemplateId, mode } = parsed.data
+  let { milestoneTemplateId, punchlistTemplateId, materialTemplateId, mode } = input
+
+  if (input.setId) {
+    const { data: set } = await supabase
+      .from('template_sets')
+      .select('milestoneTemplateId, punchlistTemplateId, materialTemplateId')
+      .eq('id', input.setId)
+      .single()
+    if (set) {
+      milestoneTemplateId = set.milestoneTemplateId ?? undefined
+      punchlistTemplateId = set.punchlistTemplateId ?? undefined
+      materialTemplateId = set.materialTemplateId ?? undefined
+    }
+  }
+
+  const parsed = importTemplateSchema.safeParse({ milestoneTemplateId, punchlistTemplateId, materialTemplateId, mode })
+  if (!parsed.success) return { error: parsed.error.flatten().fieldErrors }
 
   async function getNextSort(table: string): Promise<number> {
     const { data } = await supabase
