@@ -6,7 +6,7 @@ export const teamMemberSchema = z.object({
   email: z.string().email('Ungültige E-Mail'),
   mobile: z.string().optional(),
   position: z.string().optional(),
-  abbreviation: z.string().max(10).optional(),
+  abbreviation: z.string().max(10, 'Maximum 10 Zeichen').optional(),
   isActive: z.coerce.boolean().default(true),
 })
 

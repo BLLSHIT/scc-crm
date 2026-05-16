@@ -314,6 +314,7 @@ model TeamMember {
   email     String  @unique
   mobile    String?
   position  String?
+  abbreviation String?
   avatarUrl String?
   isActive  Boolean @default(true)
 
