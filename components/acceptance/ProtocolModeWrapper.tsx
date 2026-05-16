@@ -21,7 +21,7 @@ export function ProtocolModeWrapper({ protocol, projectId, teamMembers, buildTea
 
   if (tabletMode) {
     return (
-      <div className="fixed inset-0 z-40 bg-slate-100">
+      <div className="fixed inset-0 z-[60] bg-slate-100">
         <div className="absolute top-3 left-3 z-50">
           <button
             onClick={() => setTabletMode(false)}
