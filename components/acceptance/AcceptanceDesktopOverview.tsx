@@ -27,9 +27,9 @@ function InlineItemEditor({
   onSaved: () => void
 }) {
   const router = useRouter()
-  const [, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition()
   const [status, setStatus] = useState<AcceptanceItem['status']>(item.status)
-  const [priority, setPriority] = useState(item.priority ?? '')
+  const [priority, setPriority] = useState<AcceptanceItem['priority'] | ''>(item.priority ?? '')
   const [notes, setNotes] = useState(item.notes ?? '')
   const [position, setPosition] = useState(item.position ?? '')
   const [uploading, setUploading] = useState(false)
@@ -39,13 +39,12 @@ function InlineItemEditor({
   const [error, setError] = useState<string | null>(null)
 
   function handleSave() {
+    setError(null)
     startTransition(async () => {
       const result = await updateItem(item.id, projectId, {
         status,
         priority: (status === 'defect' && priority) ? priority as AcceptanceItem['priority'] : null,
         notes: notes || null,
-        assigneeId: item.assigneeId,
-        buildTeamId: item.buildTeamId,
         position: position || null,
       })
       if (result.error) {
@@ -58,6 +57,7 @@ function InlineItemEditor({
   }
 
   async function handlePhoto(file: File) {
+    setError(null)
     setUploading(true)
     try {
       const supabase = createClient()
@@ -76,7 +76,6 @@ function InlineItemEditor({
           id: `l-${Date.now()}`, storagePath, filename: file.name, signedUrl: signedData.signedUrl
         }])
       }
-      router.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload fehlgeschlagen')
     } finally {
@@ -170,8 +169,8 @@ function InlineItemEditor({
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       <div className="flex gap-2">
-        <Button size="sm" onClick={handleSave} className="bg-[#036147] hover:bg-[#025038] text-white flex-1">
-          Speichern
+        <Button size="sm" onClick={handleSave} disabled={isPending} className="bg-[#036147] hover:bg-[#025038] text-white flex-1">
+          {isPending ? 'Speichern…' : 'Speichern'}
         </Button>
         <Button size="sm" variant="ghost" onClick={onSaved}>Abbrechen</Button>
       </div>
