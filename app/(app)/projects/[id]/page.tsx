@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getProjectById, getProjectAttachments, type ProjectStatus } from '@/lib/db/projects'
 import { getActivityLogs } from '@/lib/db/activity-logs'
-import { getOrCreateProtocol } from '@/lib/db/acceptance-protocol'
+import { getOrCreateProtocol, type AcceptanceProtocol } from '@/lib/db/acceptance-protocol'
 import { getActiveBuildTeamOptions } from '@/lib/db/build-teams'
 import { Header } from '@/components/layout/Header'
 import { buttonVariants } from '@/components/ui/button'
@@ -52,7 +52,7 @@ export default async function ProjectDetailPage({
   let activities: any[] = []
   let projectTasks: any[] = []
   let projectInvoices: any[] = []
-  let protocol: import('@/lib/db/acceptance-protocol').AcceptanceProtocol | null = null
+  let protocol: AcceptanceProtocol | null = null
   let tmRes: { data: { id: string; firstName: string; lastName: string }[] | null } = { data: [] }
   let buildTeams: { id: string; name: string }[] = []
 
