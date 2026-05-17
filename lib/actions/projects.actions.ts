@@ -248,11 +248,16 @@ export async function deleteMilestone(milestoneId: string): Promise<ActionResult
   return {}
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
 export async function updateMilestoneDates(
   milestoneId: string,
   startDate: string | null,
   dueDate: string,
 ): Promise<ActionResult> {
+  if (!DATE_RE.test(dueDate) || (startDate && !DATE_RE.test(startDate))) {
+    return { error: { _form: ['Ungültiges Datumsformat.'] } }
+  }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: { _form: ['Nicht autorisiert.'] } }

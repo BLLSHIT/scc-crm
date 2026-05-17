@@ -25,7 +25,10 @@ type DragState = {
 
 // ─── Date helpers ───────────────────────────────────────────────────────────
 function isoToDate(s: string): Date { return new Date(s + 'T00:00:00') }
-function dateToIso(d: Date): string { return d.toISOString().split('T')[0] }
+function dateToIso(d: Date): string {
+  // Use local year/month/day to avoid UTC conversion shifting the date for UTC+ timezones
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 function addDays(d: Date, n: number): Date { const r = new Date(d); r.setDate(r.getDate() + n); return r }
 function addMonths(d: Date, n: number): Date { const r = new Date(d); r.setMonth(r.getMonth() + n); return r }
 
