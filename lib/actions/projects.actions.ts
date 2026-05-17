@@ -209,6 +209,7 @@ export async function addMilestone(projectId: string, input: MilestoneInput): Pr
     projectId,
     title: parsed.data.title.trim(),
     description: parsed.data.description?.trim() || null,
+    startDate: parsed.data.startDate || null,
     dueDate: parsed.data.dueDate || null,
     sortOrder: nextSort,
     updatedAt: new Date().toISOString(),
@@ -244,6 +245,26 @@ export async function deleteMilestone(milestoneId: string): Promise<ActionResult
   const { error } = await supabase.from('project_milestones').delete().eq('id', milestoneId)
   if (error) return { error: { _form: [error.message] } }
   if (row?.projectId) revalidatePath(`/projects/${row.projectId}`)
+  return {}
+}
+
+export async function updateMilestoneDates(
+  milestoneId: string,
+  startDate: string | null,
+  dueDate: string,
+): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
+  const { data: row } = await supabase
+    .from('project_milestones').select('projectId').eq('id', milestoneId).single()
+  if (!row) return { error: { _form: ['Meilenstein nicht gefunden.'] } }
+  const { error } = await supabase
+    .from('project_milestones')
+    .update({ startDate: startDate || null, dueDate, updatedAt: new Date().toISOString() })
+    .eq('id', milestoneId)
+  if (error) return { error: { _form: [error.message] } }
+  revalidatePath(`/projects/${row.projectId}`)
   return {}
 }
 
