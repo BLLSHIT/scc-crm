@@ -1,19 +1,20 @@
 'use client'
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Trash2, CheckCircle2, Circle, CalendarClock, ListChecks } from 'lucide-react'
+import { Plus, Trash2, CheckCircle2, Circle, CalendarClock, ListChecks, BarChart2 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
-import { addMilestone, toggleMilestone, deleteMilestone } from '@/lib/actions/projects.actions'
+import { addMilestone, toggleMilestone, deleteMilestone, updateMilestoneDates } from '@/lib/actions/projects.actions'
 import { ImportTemplateModal } from '@/components/templates/ImportTemplateModal'
+import { MilestoneGantt } from '@/components/projects/MilestoneGantt'
 
 interface Milestone {
   id: string
   title: string
   description?: string | null
+  startDate?: string | null
   dueDate?: string | null
   completedAt?: string | null
   sortOrder: number
@@ -26,9 +27,12 @@ interface Props {
 
 export function MilestonesCard({ projectId, milestones }: Props) {
   const router = useRouter()
+  const [view, setView] = useState<'list' | 'gantt'>('list')
+  const [scale, setScale] = useState<'kw' | 'mon'>('kw')
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [startDate, setStartDate] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -42,29 +46,30 @@ export function MilestonesCard({ projectId, milestones }: Props) {
     if (!title.trim()) return
     setError(null)
     startTransition(async () => {
-      const result = await addMilestone(projectId, { title, description, dueDate, sortOrder: 0 })
-      if (result.error) {
-        setError(result.error._form?.[0] ?? 'Fehler.')
-        return
-      }
-      setTitle(''); setDescription(''); setDueDate(''); setShowForm(false)
+      const result = await addMilestone(projectId, {
+        title,
+        description,
+        startDate: startDate || undefined,
+        dueDate: dueDate || undefined,
+        sortOrder: 0,
+      })
+      if (result.error) { setError(result.error._form?.[0] ?? 'Fehler.'); return }
+      setTitle(''); setDescription(''); setStartDate(''); setDueDate(''); setShowForm(false)
       router.refresh()
     })
   }
 
   function handleToggle(id: string) {
-    startTransition(async () => {
-      await toggleMilestone(id)
-      router.refresh()
-    })
+    startTransition(async () => { await toggleMilestone(id); router.refresh() })
   }
 
   function handleDelete(id: string) {
     if (!confirm('Diesen Meilenstein wirklich löschen?')) return
-    startTransition(async () => {
-      await deleteMilestone(id)
-      router.refresh()
-    })
+    startTransition(async () => { await deleteMilestone(id); router.refresh() })
+  }
+
+  function handleDatesChange(id: string, newStart: string | null, newDue: string) {
+    startTransition(async () => { await updateMilestoneDates(id, newStart, newDue); router.refresh() })
   }
 
   return (
@@ -72,7 +77,41 @@ export function MilestonesCard({ projectId, milestones }: Props) {
       <CardHeader>
         <CardTitle className="text-base flex items-center justify-between">
           <span>Meilensteine ({completed}/{total})</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Liste / Gantt toggle */}
+            <div className="flex bg-slate-100 rounded-md p-0.5 gap-0.5">
+              <Button
+                type="button" size="sm" variant={view === 'list' ? 'secondary' : 'ghost'}
+                className="h-7 px-2 text-xs"
+                onClick={() => setView('list')}
+              >
+                ☰ Liste
+              </Button>
+              <Button
+                type="button" size="sm" variant={view === 'gantt' ? 'secondary' : 'ghost'}
+                className="h-7 px-2 text-xs"
+                onClick={() => setView('gantt')}
+              >
+                <BarChart2 className="w-3 h-3 mr-1" />Gantt
+              </Button>
+            </div>
+
+            {/* KW / Mon toggle — only visible in Gantt view */}
+            {view === 'gantt' && (
+              <div className="flex bg-slate-100 rounded-md p-0.5 gap-0.5">
+                <Button
+                  type="button" size="sm" variant={scale === 'kw' ? 'secondary' : 'ghost'}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setScale('kw')}
+                >KW</Button>
+                <Button
+                  type="button" size="sm" variant={scale === 'mon' ? 'secondary' : 'ghost'}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setScale('mon')}
+                >Mon</Button>
+              </div>
+            )}
+
             <Button type="button" size="sm" variant="outline" onClick={() => setShowImport(true)}>
               <ListChecks className="w-4 h-4 mr-1" />Vorlage laden
             </Button>
@@ -85,11 +124,11 @@ export function MilestonesCard({ projectId, milestones }: Props) {
         </CardTitle>
         {total > 0 && (
           <div className="h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
-            <div className="h-full bg-emerald-500 transition-all"
-              style={{ width: `${progress}%` }} />
+            <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
           </div>
         )}
       </CardHeader>
+
       <CardContent className="space-y-3">
         {error && (
           <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{error}</div>
@@ -101,14 +140,16 @@ export function MilestonesCard({ projectId, milestones }: Props) {
               placeholder="Titel des Meilensteins" autoFocus />
             <Input value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder="Beschreibung (optional)" />
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                placeholder="Von (optional)" />
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-                className="flex-1" placeholder="Fällig am" />
+                placeholder="Bis / Fällig am" />
             </div>
             <div className="flex gap-2">
               <Button type="button" size="sm" onClick={handleAdd}>Hinzufügen</Button>
               <Button type="button" size="sm" variant="outline"
-                onClick={() => { setShowForm(false); setTitle(''); setDescription(''); setDueDate('') }}>
+                onClick={() => { setShowForm(false); setTitle(''); setDescription(''); setStartDate(''); setDueDate('') }}>
                 Abbrechen
               </Button>
             </div>
@@ -117,14 +158,20 @@ export function MilestonesCard({ projectId, milestones }: Props) {
 
         {milestones.length === 0 ? (
           <p className="text-sm text-slate-400">Noch keine Meilensteine.</p>
+        ) : view === 'gantt' ? (
+          <MilestoneGantt milestones={milestones} scale={scale} onDatesChange={handleDatesChange} />
         ) : (
           <ul className="space-y-1.5">
             {milestones.map((m) => {
               const isDone = !!m.completedAt
               const isOverdue = !isDone && m.dueDate
                 && new Date(m.dueDate) < new Date(new Date().toDateString())
+              const dateLabel = m.startDate && m.dueDate
+                ? `${formatDate(m.startDate)} – ${formatDate(m.dueDate)}`
+                : m.dueDate ? formatDate(m.dueDate) : null
               return (
-                <li key={m.id} className="flex items-start gap-2 group p-2 -mx-2 rounded-md hover:bg-slate-50">
+                <li key={m.id}
+                  className="flex items-start gap-2 group p-2 -mx-2 rounded-md hover:bg-slate-50">
                   <button type="button" onClick={() => handleToggle(m.id)} className="mt-0.5 flex-shrink-0">
                     {isDone
                       ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -137,12 +184,9 @@ export function MilestonesCard({ projectId, milestones }: Props) {
                     {m.description && (
                       <p className="text-xs text-slate-500 mt-0.5">{m.description}</p>
                     )}
-                    {m.dueDate && (
-                      <p className={`text-xs flex items-center gap-1 mt-0.5 ${
-                        isOverdue ? 'text-red-600' : 'text-slate-500'
-                      }`}>
-                        <CalendarClock className="w-3 h-3" />
-                        {formatDate(m.dueDate)}
+                    {dateLabel && (
+                      <p className={`text-xs flex items-center gap-1 mt-0.5 ${isOverdue ? 'text-red-600' : 'text-slate-500'}`}>
+                        <CalendarClock className="w-3 h-3" />{dateLabel}
                       </p>
                     )}
                   </div>
