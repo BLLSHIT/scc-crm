@@ -5,9 +5,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 interface Milestone {
   id: string
   title: string
+  startDate?: string | null
   dueDate: string | null
-  endDate: string | null
-  type: string
   completedAt: string | null
 }
 
@@ -131,9 +130,6 @@ export function ProjectGanttCalendar({ projects }: Props) {
           <span className="flex items-center gap-1.5 text-xs text-slate-500">
             <span className="text-amber-500 text-sm">▼</span> Meilenstein
           </span>
-          <span className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span className="text-sm">🔨</span> Aufbau
-          </span>
         </div>
       </div>
 
@@ -171,33 +167,8 @@ export function ProjectGanttCalendar({ projects }: Props) {
             const barRight = end ? (100 - pct(end, windowStart, totalMs)) : 0
             const showBar = barLeft < 100 && barRight < 100
 
-            const aufbau = p.milestones.find(m => m.type === 'aufbau')
-            const regularMilestones = p.milestones.filter(m => m.type !== 'aufbau' && m.dueDate)
-
-            let aufbauBar: React.ReactNode = null
-            if (aufbau?.dueDate && aufbau?.endDate) {
-              const aufbauStart = new Date(aufbau.dueDate)
-              const aufbauEnd = new Date(aufbau.endDate)
-              const aLeft = pct(aufbauStart, windowStart, totalMs)
-              const aRight = 100 - pct(aufbauEnd, windowStart, totalMs)
-              if (aLeft < 100 && aRight < 100) {
-                aufbauBar = (
-                  <div
-                    className="absolute rounded"
-                    style={{
-                      left: `${Math.max(0, aLeft)}%`,
-                      right: `${Math.max(0, aRight)}%`,
-                      top: 24,
-                      height: 7,
-                      background: colour,
-                      filter: 'brightness(0.7)',
-                      minWidth: 3,
-                    }}
-                    title={`🔨 Aufbau: ${aufbauStart.toLocaleDateString('de-DE')} – ${aufbauEnd.toLocaleDateString('de-DE')}`}
-                  />
-                )
-              }
-            }
+            const rangeMilestones = p.milestones.filter(m => m.startDate && m.dueDate)
+            const pointMilestones = p.milestones.filter(m => !m.startDate && m.dueDate)
 
             return (
               <div
@@ -247,9 +218,31 @@ export function ProjectGanttCalendar({ projects }: Props) {
                     </div>
                   )}
 
-                  {aufbauBar}
+                  {rangeMilestones.map(m => {
+                    const rStart = new Date(m.startDate!)
+                    const rEnd = new Date(m.dueDate!)
+                    const rLeft = pct(rStart, windowStart, totalMs)
+                    const rRight = 100 - pct(rEnd, windowStart, totalMs)
+                    if (rLeft >= 100 || rRight >= 100) return null
+                    return (
+                      <div
+                        key={m.id}
+                        className="absolute rounded"
+                        style={{
+                          left: `${Math.max(0, rLeft)}%`,
+                          right: `${Math.max(0, rRight)}%`,
+                          top: 24,
+                          height: 7,
+                          background: colour,
+                          filter: 'brightness(0.7)',
+                          minWidth: 3,
+                        }}
+                        title={`${m.title}: ${rStart.toLocaleDateString('de-DE')} – ${rEnd.toLocaleDateString('de-DE')}`}
+                      />
+                    )
+                  })}
 
-                  {regularMilestones.map(m => {
+                  {pointMilestones.map(m => {
                     const mDate = new Date(m.dueDate!)
                     const mLeft = pct(mDate, windowStart, totalMs)
                     if (mLeft < 0 || mLeft > 100) return null

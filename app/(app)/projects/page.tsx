@@ -48,15 +48,15 @@ function initials(tm: { firstName: string; lastName: string; abbreviation?: stri
 }
 
 function MilestoneTag({ m }: { m: any }) {
-  const isAufbau = m.type === 'aufbau'
+  const isRange = !!m.startDate && !!m.dueDate
   const isDone = !!m.completedAt
 
-  if (isAufbau) {
-    const start = m.dueDate ? new Date(m.dueDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '?'
-    const end = m.endDate ? new Date(m.endDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '?'
+  if (isRange) {
+    const start = new Date(m.startDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+    const end = new Date(m.dueDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
     return (
       <span className="inline-flex bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[0.68rem] font-semibold whitespace-nowrap">
-        🔨 Aufbau · {start} – {end}
+        {m.title} · {start} – {end}
       </span>
     )
   }
