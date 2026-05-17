@@ -481,3 +481,110 @@ export async function deleteMaterialItem(itemId: string): Promise<ActionResult> 
   if (row?.projectId) revalidatePath(`/projects/${row.projectId}`)
   return {}
 }
+
+// ─── Import aus Rechnung ─────────────────────────────────────────────────────
+
+export type InvoiceOption = {
+  id: string
+  invoiceNumber: string
+  title: string
+  issueDate: string
+  lineItems: {
+    name: string
+    quantity: number | null
+    unit: string | null
+    description: string | null
+  }[]
+}
+
+export async function fetchInvoicesForProject(projectId: string): Promise<InvoiceOption[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data: project } = await supabase
+    .from('projects').select('dealId').eq('id', projectId).single()
+  if (!project?.dealId) return []
+
+  const { data: invoices } = await supabase
+    .from('invoices')
+    .select('id, invoiceNumber, title, issueDate')
+    .eq('dealId', project.dealId)
+    .order('issueDate', { ascending: false })
+  if (!invoices?.length) return []
+
+  const results: InvoiceOption[] = []
+  for (const inv of invoices) {
+    const { data: lineItems } = await supabase
+      .from('invoice_line_items')
+      .select('name, quantity, unit, description')
+      .eq('invoiceId', inv.id)
+      .eq('itemType', 'product')
+      .order('sortOrder', { ascending: true })
+    results.push({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      title: inv.title,
+      issueDate: inv.issueDate,
+      lineItems: lineItems ?? [],
+    })
+  }
+  return results
+}
+
+export async function importMaterialFromInvoice(
+  projectId: string,
+  invoiceId: string,
+  mode: 'append' | 'replace',
+): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: { _form: ['Nicht autorisiert.'] } }
+
+  const { data: project } = await supabase
+    .from('projects').select('dealId').eq('id', projectId).single()
+  if (!project) return { error: { _form: ['Projekt nicht gefunden.'] } }
+
+  const { data: invoice } = await supabase
+    .from('invoices').select('dealId').eq('id', invoiceId).single()
+  if (!invoice || invoice.dealId !== project.dealId) {
+    return { error: { _form: ['Rechnung gehört nicht zu diesem Projekt.'] } }
+  }
+
+  const { data: lineItems } = await supabase
+    .from('invoice_line_items')
+    .select('name, quantity, unit, description')
+    .eq('invoiceId', invoiceId)
+    .eq('itemType', 'product')
+    .order('sortOrder', { ascending: true })
+
+  if (!lineItems?.length) {
+    return { error: { _form: ['Keine Produktpositionen in dieser Rechnung.'] } }
+  }
+
+  if (mode === 'replace') {
+    const { error: delError } = await supabase
+      .from('project_material_items').delete().eq('projectId', projectId)
+    if (delError) return { error: { _form: [delError.message] } }
+  }
+
+  const now = new Date().toISOString()
+  const { error: insError } = await supabase.from('project_material_items').insert(
+    lineItems.map((item, index) => ({
+      id: randomUUID(),
+      projectId,
+      title: item.name.trim(),
+      quantity: item.quantity ?? null,
+      unit: item.unit?.trim() || null,
+      notes: item.description?.trim() || null,
+      isOrdered: false,
+      isArrived: false,
+      sortOrder: index,
+      updatedAt: now,
+    }))
+  )
+  if (insError) return { error: { _form: [insError.message] } }
+
+  revalidatePath(`/projects/${projectId}`)
+  return {}
+}
