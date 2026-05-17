@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useRef, useState, useMemo } from 'react'
 
 export interface GanttMilestone {
   id: string
@@ -52,6 +52,10 @@ function monthLabel(d: Date): string {
   return d.toLocaleString('de-DE', { month: 'short', year: '2-digit' })
 }
 
+function shiftDate(d: Date, n: number, scale: 'kw' | 'mon'): Date {
+  return scale === 'kw' ? addDays(d, n * 7) : addMonths(d, n)
+}
+
 // ─── Column helpers ─────────────────────────────────────────────────────────
 function buildColumns(milestones: GanttMilestone[], scale: 'kw' | 'mon'): Date[] {
   const dates: Date[] = []
@@ -79,6 +83,7 @@ function buildColumns(milestones: GanttMilestone[], scale: 'kw' | 'mon'): Date[]
   return cols
 }
 
+// Dates outside the range clamp silently to the nearest edge column.
 function dateToColIdx(d: Date, columns: Date[], scale: 'kw' | 'mon'): number {
   const target = (scale === 'kw' ? startOfWeek(d) : startOfMonth(d)).getTime()
   const idx = columns.findIndex(c => c.getTime() === target)
@@ -94,7 +99,7 @@ export function MilestoneGantt({ milestones, scale, onDatesChange }: Props) {
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [visualDx, setVisualDx] = useState(0)
 
-  const columns = buildColumns(milestones, scale)
+  const columns = useMemo(() => buildColumns(milestones, scale), [milestones, scale])
   const todayCol = dateToColIdx(new Date(), columns, scale)
 
   function colWidth(): number {
@@ -122,47 +127,49 @@ export function MilestoneGantt({ milestones, scale, onDatesChange }: Props) {
     setVisualDx(e.clientX - dragRef.current.startX)
   }
 
+  function cancelDrag() {
+    dragRef.current = null
+    setDraggingId(null)
+    setVisualDx(0)
+  }
+
   function onPointerUp(e: React.PointerEvent) {
     if (!dragRef.current) return
     const { type, milestoneId, startX, origStart, origDue } = dragRef.current
     const cw = colWidth()
     const colsDelta = Math.round((e.clientX - startX) / cw)
-    dragRef.current = null
-    setDraggingId(null)
-    setVisualDx(0)
+    cancelDrag()
 
     if (colsDelta === 0) return
 
-    function shiftDate(d: Date, n: number): Date {
-      return scale === 'kw' ? addDays(d, n * 7) : addMonths(d, n)
-    }
-
     if (type === 'move') {
-      const newStart = origStart ? shiftDate(origStart, colsDelta) : null
-      const newDue = shiftDate(origDue, colsDelta)
+      const newStart = origStart ? shiftDate(origStart, colsDelta, scale) : null
+      const newDue = shiftDate(origDue, colsDelta, scale)
       onDatesChange(milestoneId, newStart ? dateToIso(newStart) : null, dateToIso(newDue))
     } else if (type === 'left' && origStart) {
-      const newStart = shiftDate(origStart, colsDelta)
-      if (newStart <= shiftDate(origDue, -1)) {
+      const newStart = shiftDate(origStart, colsDelta, scale)
+      if (newStart <= shiftDate(origDue, -1, scale)) {
         onDatesChange(milestoneId, dateToIso(newStart), dateToIso(origDue))
       }
     } else if (type === 'right') {
-      const newDue = shiftDate(origDue, colsDelta)
-      const minDue = origStart ? shiftDate(origStart, 1) : origDue
+      const newDue = shiftDate(origDue, colsDelta, scale)
+      const minDue = origStart ? shiftDate(origStart, 1, scale) : origDue
       if (newDue >= minDue) {
         onDatesChange(milestoneId, origStart ? dateToIso(origStart) : null, dateToIso(newDue))
       }
     }
   }
 
+  // CSS grid: column 1 = label (LABEL_PX), columns 2..N+1 = date columns (1fr each)
   const gridCols = `${LABEL_PX}px repeat(${columns.length}, 1fr)`
 
   return (
     <div
       ref={containerRef}
-      className="overflow-x-auto rounded-lg border border-slate-100"
+      className="overflow-x-auto rounded-lg border border-slate-100 touch-none"
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onPointerCancel={cancelDrag}
     >
       <div style={{ minWidth: Math.max(500, LABEL_PX + columns.length * 36) }}>
         {/* Header row */}
@@ -213,7 +220,7 @@ export function MilestoneGantt({ milestones, scale, onDatesChange }: Props) {
                 className="grid items-center mb-1.5"
                 style={{ gridTemplateColumns: gridCols }}
               >
-                {/* Label */}
+                {/* Label (column 1) */}
                 <div className={`text-[10px] pr-2 truncate flex items-center gap-1 ${isDone ? 'text-slate-400' : 'text-slate-700 font-medium'}`}>
                   <span>{isDone ? '✓' : '○'}</span>
                   <span className="truncate">{m.title}</span>
@@ -224,7 +231,7 @@ export function MilestoneGantt({ milestones, scale, onDatesChange }: Props) {
                   <div style={{ gridColumn: `2 / span ${colStart}` }} />
                 )}
 
-                {/* Bar or diamond */}
+                {/* Bar or diamond — column index is 1-based in CSS grid, +1 for label col, +1 for base offset = colStart+2 */}
                 {hasRange ? (
                   <div
                     style={{
@@ -245,7 +252,7 @@ export function MilestoneGantt({ milestones, scale, onDatesChange }: Props) {
                         onPointerDown={(e) => startDrag(e, 'left', m)}
                       />
                     )}
-                    <span className="text-[8px] text-white font-medium truncate px-3 pointer-events-none">
+                    <span className="text-[10px] text-white font-medium truncate px-3 pointer-events-none">
                       {m.startDate?.slice(5)} – {m.dueDate?.slice(5)}
                     </span>
                     {!isDone && (
