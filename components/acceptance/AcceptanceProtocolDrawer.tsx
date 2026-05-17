@@ -16,10 +16,13 @@ interface Props {
   teamMembers: TeamOption[]
   buildTeams: BuildTeamOption[]
   currentUserId?: string
+  milestones?: { completedAt?: string | null }[]
+  punchItems?: { isDone: boolean }[]
+  materialItems?: { id: string }[]
 }
 
 export function AcceptanceProtocolDrawer({
-  open, onClose, protocol, projectId, projectName, teamMembers, buildTeams, currentUserId,
+  open, onClose, protocol, projectId, projectName, teamMembers, buildTeams, currentUserId, milestones, punchItems, materialItems,
 }: Props) {
   useEffect(() => {
     if (!open) return
@@ -75,6 +78,9 @@ export function AcceptanceProtocolDrawer({
             teamMembers={teamMembers}
             buildTeams={buildTeams}
             currentUserId={currentUserId}
+            milestones={milestones}
+            punchItems={punchItems}
+            materialItems={materialItems}
           />
         </div>
       </aside>
