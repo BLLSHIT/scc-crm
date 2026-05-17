@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Trash2, CheckCircle2, Circle, CalendarClock, ListChecks, BarChart2 } from 'lucide-react'
+import { Plus, Trash2, CheckCircle2, Circle, CalendarClock, ListChecks, BarChart2, List } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { addMilestone, toggleMilestone, deleteMilestone, updateMilestoneDates } from '@/lib/actions/projects.actions'
 import { ImportTemplateModal } from '@/components/templates/ImportTemplateModal'
@@ -85,7 +85,7 @@ export function MilestonesCard({ projectId, milestones }: Props) {
                 className="h-7 px-2 text-xs"
                 onClick={() => setView('list')}
               >
-                ☰ Liste
+                <List className="w-3 h-3 mr-1" />Liste
               </Button>
               <Button
                 type="button" size="sm" variant={view === 'gantt' ? 'secondary' : 'ghost'}
@@ -142,9 +142,9 @@ export function MilestonesCard({ projectId, milestones }: Props) {
               placeholder="Beschreibung (optional)" />
             <div className="grid grid-cols-2 gap-2">
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                placeholder="Von (optional)" />
+                aria-label="Von (optional)" />
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-                placeholder="Bis / Fällig am" />
+                aria-label="Bis / Fällig am" />
             </div>
             <div className="flex gap-2">
               <Button type="button" size="sm" onClick={handleAdd}>Hinzufügen</Button>
@@ -172,7 +172,8 @@ export function MilestonesCard({ projectId, milestones }: Props) {
               return (
                 <li key={m.id}
                   className="flex items-start gap-2 group p-2 -mx-2 rounded-md hover:bg-slate-50">
-                  <button type="button" onClick={() => handleToggle(m.id)} className="mt-0.5 flex-shrink-0">
+                  <button type="button" onClick={() => handleToggle(m.id)} className="mt-0.5 flex-shrink-0"
+                    aria-label={isDone ? 'Meilenstein als offen markieren' : 'Meilenstein abhaken'}>
                     {isDone
                       ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       : <Circle className="w-4 h-4 text-slate-300 hover:text-slate-500" />}
@@ -191,6 +192,7 @@ export function MilestonesCard({ projectId, milestones }: Props) {
                     )}
                   </div>
                   <button type="button" onClick={() => handleDelete(m.id)}
+                    aria-label="Meilenstein löschen"
                     className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition-opacity flex-shrink-0">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
