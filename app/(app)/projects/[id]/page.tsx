@@ -146,6 +146,9 @@ export default async function ProjectDetailPage({
                   teamMembers={tmRes.data ?? []}
                   buildTeams={buildTeams}
                   currentUserId={currentUserId ?? undefined}
+                  milestones={project.milestones ?? []}
+                  punchItems={project.punchItems ?? []}
+                  materialItems={project.materialItems ?? []}
                 />
               )}
               <Link href={`/projects/${id}/edit`}
