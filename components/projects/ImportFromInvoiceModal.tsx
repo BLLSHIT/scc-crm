@@ -67,7 +67,7 @@ export function ImportFromInvoiceModal({ projectId, open, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Aus Rechnung importieren</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <button onClick={onClose} aria-label="Schließen" className="text-slate-400 hover:text-slate-700">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -113,6 +113,7 @@ export function ImportFromInvoiceModal({ projectId, open, onClose }: Props) {
                         value={inv.id}
                         checked={selectedId === inv.id}
                         onChange={() => setSelectedId(inv.id)}
+                        aria-label={`${inv.invoiceNumber} – ${inv.title}`}
                         className="mt-0.5 accent-blue-600"
                       />
                       <div>
@@ -144,7 +145,7 @@ export function ImportFromInvoiceModal({ projectId, open, onClose }: Props) {
                     </div>
                     {selected.lineItems.slice(0, 3).map((item, i) => (
                       <div
-                        key={i}
+                        key={`${selected.id}-item-${i}`}
                         className="grid grid-cols-[1fr_60px_60px] px-3 py-2 text-sm border-t border-slate-100"
                       >
                         <span className="text-slate-900 truncate">{item.name}</span>
@@ -172,6 +173,7 @@ export function ImportFromInvoiceModal({ projectId, open, onClose }: Props) {
                           value={m}
                           checked={importMode === m}
                           onChange={() => setImportMode(m)}
+                          aria-label={m === 'append' ? 'Anhängen' : 'Ersetzen'}
                           className="accent-blue-600"
                         />
                         <span className="text-sm text-slate-700">
