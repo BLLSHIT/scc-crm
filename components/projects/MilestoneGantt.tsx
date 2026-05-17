@@ -143,7 +143,7 @@ export function MilestoneGantt({ milestones, scale, onDatesChange }: Props) {
       onDatesChange(milestoneId, newStart ? dateToIso(newStart) : null, dateToIso(newDue))
     } else if (type === 'left' && origStart) {
       const newStart = shiftDate(origStart, colsDelta)
-      if (newStart < origDue) {
+      if (newStart <= shiftDate(origDue, -1)) {
         onDatesChange(milestoneId, dateToIso(newStart), dateToIso(origDue))
       }
     } else if (type === 'right') {
@@ -184,7 +184,15 @@ export function MilestoneGantt({ milestones, scale, onDatesChange }: Props) {
         </div>
 
         {/* Milestone rows */}
-        <div className="px-2 pb-2">
+        <div className="px-2 pb-2 relative">
+          {todayCol >= 0 && todayCol < columns.length && (
+            <div
+              className="absolute top-0 bottom-0 w-px bg-red-400/50 pointer-events-none z-10"
+              style={{
+                left: `calc(${LABEL_PX}px + ${(todayCol + 0.5) / columns.length} * (100% - ${LABEL_PX}px))`,
+              }}
+            />
+          )}
           {milestones.map((m) => {
             const isDone = !!m.completedAt
             const hasRange = !!m.startDate && !!m.dueDate
@@ -263,16 +271,6 @@ export function MilestoneGantt({ milestones, scale, onDatesChange }: Props) {
           })}
         </div>
 
-        {/* Today indicator */}
-        <div className="mx-2 mt-1 pt-1.5 border-t border-dashed border-red-200 flex items-center gap-1.5 pb-2">
-          <div className="w-0 h-0 border-l-4 border-r-4 border-t-[5px] border-l-transparent border-r-transparent border-t-red-400" />
-          <span className="text-[9px] text-red-400 font-medium">
-            Heute ·{' '}
-            {scale === 'kw'
-              ? `KW ${isoWeek(new Date())}`
-              : new Date().toLocaleString('de-DE', { month: 'long', year: 'numeric' })}
-          </span>
-        </div>
       </div>
     </div>
   )
