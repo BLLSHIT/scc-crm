@@ -28,6 +28,7 @@ export type ProjectInput = z.infer<typeof projectSchema>
 export const milestoneSchema = z.object({
   title: z.string().min(1, 'Titel erforderlich'),
   description: z.string().optional(),
+  startDate: z.string().optional(),
   dueDate: z.string().optional(),
   sortOrder: z.coerce.number().int().default(0),
 })

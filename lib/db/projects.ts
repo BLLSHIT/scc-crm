@@ -20,7 +20,7 @@ export async function getProjects(filters: ProjectFilters = {}) {
        teamMember:team_members(id, firstName, lastName, abbreviation),
        buildTeam:build_teams(id, name),
        deal:deals(id, title, value, currency),
-       milestones:project_milestones(id, title, dueDate, endDate, type, completedAt, sortOrder)`
+       milestones:project_milestones(id, title, startDate, dueDate, completedAt, sortOrder)`
     )
     .order('createdAt', { ascending: false })
   if (filters.q) {
