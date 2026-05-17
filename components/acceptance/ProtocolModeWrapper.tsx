@@ -13,9 +13,12 @@ interface Props {
   teamMembers: TeamOption[]
   buildTeams: BuildTeamOption[]
   currentUserId?: string
+  milestones?: { completedAt?: string | null }[]
+  punchItems?: { isDone: boolean }[]
+  materialItems?: { id: string }[]
 }
 
-export function ProtocolModeWrapper({ protocol, projectId, teamMembers, buildTeams, currentUserId }: Props) {
+export function ProtocolModeWrapper({ protocol, projectId, teamMembers, buildTeams, currentUserId, milestones, punchItems, materialItems }: Props) {
   const [tabletMode, setTabletMode] = useState(false)
   const [initialPhaseId, setInitialPhaseId] = useState<string | undefined>(undefined)
 
@@ -47,6 +50,9 @@ export function ProtocolModeWrapper({ protocol, projectId, teamMembers, buildTea
       protocol={protocol}
       projectId={projectId}
       onTabletMode={(phaseId?: string) => { setInitialPhaseId(phaseId); setTabletMode(true) }}
+      milestones={milestones}
+      punchItems={punchItems}
+      materialItems={materialItems}
     />
   )
 }
