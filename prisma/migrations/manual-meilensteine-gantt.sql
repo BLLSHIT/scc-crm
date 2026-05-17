@@ -12,7 +12,8 @@ UPDATE public.project_milestones
 SET "startDate" = "dueDate"::DATE,
     "dueDate"   = "endDate"
 WHERE type = 'aufbau'
-  AND "endDate" IS NOT NULL;
+  AND "endDate" IS NOT NULL
+  AND "startDate" IS NULL;
 
 -- 3. Remove obsolete columns
 ALTER TABLE public.project_milestones
