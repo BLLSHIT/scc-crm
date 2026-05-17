@@ -4,11 +4,12 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Trash2, Package, CheckCircle2, Circle, Truck, Boxes } from 'lucide-react'
+import { Plus, Trash2, Package, CheckCircle2, Circle, Truck, Boxes, FileText } from 'lucide-react'
 import {
   addMaterialItem, toggleMaterialOrdered, toggleMaterialArrived, deleteMaterialItem,
 } from '@/lib/actions/projects.actions'
 import { ImportTemplateModal } from '@/components/templates/ImportTemplateModal'
+import { ImportFromInvoiceModal } from '@/components/projects/ImportFromInvoiceModal'
 
 interface MaterialItem {
   id: string
@@ -36,6 +37,7 @@ export function MaterialChecklistCard({ projectId, items }: Props) {
   const [, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [showImport, setShowImport] = useState(false)
+  const [showInvoiceImport, setShowInvoiceImport] = useState(false)
 
   const arrived = items.filter((i) => i.isArrived).length
   const ordered = items.filter((i) => i.isOrdered).length
@@ -91,6 +93,9 @@ export function MaterialChecklistCard({ projectId, items }: Props) {
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" variant="outline" onClick={() => setShowImport(true)}>
               <Boxes className="w-4 h-4 mr-1" />Vorlage laden
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setShowInvoiceImport(true)}>
+              <FileText className="w-4 h-4 mr-1" />Aus Rechnung
             </Button>
             {!showForm && (
               <Button type="button" size="sm" onClick={() => setShowForm(true)}>
@@ -226,6 +231,7 @@ export function MaterialChecklistCard({ projectId, items }: Props) {
         )}
       </CardContent>
       <ImportTemplateModal projectId={projectId} open={showImport} onClose={() => setShowImport(false)} />
+      <ImportFromInvoiceModal projectId={projectId} open={showInvoiceImport} onClose={() => setShowInvoiceImport(false)} />
     </Card>
   )
 }
