@@ -8,11 +8,15 @@ import { CheckCircle2, Circle, Plus, Tablet, FileText, AlertTriangle, Trash2, Ro
 import { addPhase, deletePhase, generateRemoteApprovalLink, reopenPhase, initProtocolFromInvoice, updateItem, recordItemPhoto } from '@/lib/actions/acceptance-protocol.actions'
 import { createClient } from '@/lib/supabase/client'
 import type { AcceptanceProtocol, AcceptancePhase, AcceptanceItem } from '@/lib/db/acceptance-protocol'
+import { HandoverSummarySection } from '@/components/projects/HandoverSummarySection'
 
 interface Props {
   protocol: AcceptanceProtocol
   projectId: string
   onTabletMode: (phaseId?: string) => void
+  milestones?: { completedAt?: string | null }[]
+  punchItems?: { isDone: boolean }[]
+  materialItems?: { id: string }[]
 }
 
 const PRIORITY_LABEL = { low: 'leicht', medium: 'mittel', critical: 'kritisch' }
@@ -335,7 +339,7 @@ function PhaseCard({ phase, projectId, onTabletMode }: { phase: AcceptancePhase;
   )
 }
 
-export function AcceptanceDesktopOverview({ protocol, projectId, onTabletMode }: Props) {
+export function AcceptanceDesktopOverview({ protocol, projectId, onTabletMode, milestones, punchItems, materialItems }: Props) {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [newPhaseName, setNewPhaseName] = useState('')
@@ -445,6 +449,14 @@ export function AcceptanceDesktopOverview({ protocol, projectId, onTabletMode }:
         </Button>
       )}
       {error && <p className="text-xs text-red-600">{error}</p>}
+      {milestones && punchItems && materialItems && (
+        <HandoverSummarySection
+          projectId={projectId}
+          milestones={milestones}
+          punchItems={punchItems}
+          materialItems={materialItems}
+        />
+      )}
     </div>
   )
 }
