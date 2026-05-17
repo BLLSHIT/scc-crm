@@ -18,11 +18,11 @@ export function HandoverSummarySection({ projectId, milestones, punchItems, mate
       <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-900">Übergabeprotokoll</h3>
         <a
-          href={`/api/projects/${projectId}/handover-pdf`}
+          href={`/api/projects/${encodeURIComponent(projectId)}/handover-pdf`}
           download
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-md bg-white hover:bg-slate-50 transition-colors text-slate-700"
         >
-          <Download className="w-3.5 h-3.5" />
+          <Download className="w-3.5 h-3.5" aria-hidden="true" />
           PDF herunterladen
         </a>
       </div>
